@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  app:
+    build:
+      context: .
+      target: development
+    command: sh # node has to be invoked manually (see README)
+    volumes:
+      - ./:/usr/src/app
+    ports:
+      - 3000:3000
+      - 9229:9229
+    tty: true
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
