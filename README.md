@@ -46,7 +46,7 @@ GCP-cryptobot is an MIT-licensed open source project. [To be updated]
 ## Stay in touch
 
 - Author - [Kalanyu Zintus-art](https://kalanyuz.com)
-- Twitter - [@nestframework](https://twitter.com/kalanyuz)
+- Twitter - [@kalanyuz](https://twitter.com/kalanyuz)
 
 ## License
 
