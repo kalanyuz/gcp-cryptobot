@@ -1,9 +1,11 @@
-import { HttpException, HttpStatus } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ExchangeController } from './exchange.controller';
 import { BitFlyerExchange } from './services/bitflyer.service';
 import { ExchangeService } from './exchange.service';
 import { HttpModule } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import configuration from '../services/configs/configurations';
+import { BotConfigService } from '../services/configs/botconfigs.service';
 
 describe('ExchangeController', () => {
   let controller: ExchangeController;
@@ -11,12 +13,19 @@ describe('ExchangeController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ExchangeController],
-      imports: [HttpModule],
+      imports: [
+        HttpModule,
+        ConfigModule.forRoot({
+          isGlobal: true,
+          load: [configuration],
+        }),
+      ],
       providers: [
         {
           provide: ExchangeService,
           useClass: BitFlyerExchange,
         },
+        BotConfigService,
       ],
     }).compile();
 

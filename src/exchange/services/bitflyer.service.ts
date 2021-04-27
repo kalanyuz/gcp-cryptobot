@@ -1,17 +1,29 @@
-import { HttpService, Injectable } from '@nestjs/common';
-import { combineLatest, Observable, zip } from 'rxjs';
-import { ExchangeService } from '../exchange.service';
+import {
+  HttpException,
+  HttpService,
+  HttpStatus,
+  Injectable,
+} from '@nestjs/common';
 import { map, filter, mergeMap, combineAll, toArray } from 'rxjs/operators';
+import { BotConfigService } from '../../services/configs/botconfigs.service';
+import { combineLatest, Observable, of, zip } from 'rxjs';
+import { ExchangeService } from '../exchange.service';
 import * as crypto from 'crypto';
 
 @Injectable()
 export class BitFlyerExchange extends ExchangeService {
   baseURL: string = 'https://api.bitflyer.com';
-  key: string;
-  secret: string;
+  key: string = '';
+  secret: string = '';
 
-  constructor(httpService: HttpService) {
+  constructor(httpService: HttpService, private configs: BotConfigService) {
     super(httpService);
+    if (configs.rebalanceTo !== 'JPY') {
+      throw new HttpException(
+        'BitFlyer module currently supports only JPY based trading pairs',
+        HttpStatus.EXPECTATION_FAILED,
+      );
+    }
     // TODO: Add secret manager
   }
 
@@ -31,18 +43,26 @@ export class BitFlyerExchange extends ExchangeService {
     };
   }
 
-  protected getBalance(): Observable<any> {
+  getPrice(): Observable<any> {
+    const path = '/v1/ticker';
+    const response = this.httpService.get(`${this.baseURL}${path}`);
+    const price = response.pipe(
+      mergeMap((x) => x.data),
+      // map(),
+    );
+    return of([]);
+  }
+
+  getBalance(): Observable<any> {
     const path = '/v1/me/getbalance';
     const signature = this.createSignature('GET', path);
-    const response = this.httpService.get(`${this.baseURL}/v1/me/getbalance`, {
+    const response = this.httpService.get(`${this.baseURL}${path}`, {
       headers: signature,
     });
-    // TODO: load currency of interests from configuration file
+
     const balance = response.pipe(
       mergeMap((x) => x.data),
-      filter((x) => {
-        return ['JPY', 'BTC', 'ETH'].includes(x['currency_code']);
-      }),
+      filter((x) => x['amount'] > 0),
       toArray(),
     );
 
@@ -50,6 +70,7 @@ export class BitFlyerExchange extends ExchangeService {
   }
 
   buy(pair: string, amount?: number, stopLoss?: number): Observable<any> {
+    /* get balance, compute total asset, allocate */
     return new Observable();
   }
 
@@ -62,13 +83,11 @@ export class BitFlyerExchange extends ExchangeService {
       size: 0,
       time_in_force: 'GTC',
     });
-    // const signature = this.createSignature('POST', path, requestBody);
-    // const response = this.httpService.post(this.baseURL + path, requestBody, {
-    //   headers: signature,
-    // });
-    const balance = this.getBalance();
-    return balance;
-    // return response;
+    const signature = this.createSignature('POST', path, requestBody);
+    const response = this.httpService.post(this.baseURL + path, requestBody, {
+      headers: signature,
+    });
+    return response;
   }
 
   clear(pair: string): Observable<any> {
