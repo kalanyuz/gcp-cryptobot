@@ -5,8 +5,8 @@ import { HttpService, Injectable } from '@nestjs/common';
 export abstract class ExchangeService {
   constructor(protected httpService: HttpService) {}
 
-  abstract getPrice(pair: string): Observable<any>;
-  abstract getBalance(pair: string): Observable<any>;
+  abstract getPrice(ofProduct: string, priceIn: string): Observable<any>;
+  abstract getBalance(priceIn: string): Observable<any>;
   abstract buy(
     pair: string,
     amount?: number,

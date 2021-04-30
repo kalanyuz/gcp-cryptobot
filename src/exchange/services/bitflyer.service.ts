@@ -4,11 +4,19 @@ import {
   HttpStatus,
   Injectable,
 } from '@nestjs/common';
-import { map, filter, mergeMap, combineAll, toArray } from 'rxjs/operators';
+import {
+  map,
+  filter,
+  mergeMap,
+  toArray,
+  concatMap,
+  reduce,
+} from 'rxjs/operators';
 import { BotConfigService } from '../../services/configs/botconfigs.service';
-import { combineLatest, Observable, of, zip } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { ExchangeService } from '../exchange.service';
 import * as crypto from 'crypto';
+import { forkJoin } from 'rxjs';
 
 @Injectable()
 export class BitFlyerExchange extends ExchangeService {
@@ -43,17 +51,42 @@ export class BitFlyerExchange extends ExchangeService {
     };
   }
 
-  getPrice(): Observable<any> {
+  getPrice(ofProduct: string, priceIn: string): Observable<any> {
     const path = '/v1/ticker';
     const response = this.httpService.get(`${this.baseURL}${path}`);
     const price = response.pipe(
-      mergeMap((x) => x.data),
-      // map(),
+      map((x) => x.data),
+      map((x) => {
+        if (x['product_code'] !== `${ofProduct}_${priceIn}`) {
+          console.error(
+            'Price info returned different from what is requested.',
+          );
+          throw new HttpException(
+            'Failed to get price info',
+            HttpStatus.EXPECTATION_FAILED,
+          );
+        }
+        try {
+          const price =
+            (parseFloat(x['best_bid']) + parseFloat(x['best_ask'])) / 2.0;
+          if (isNaN(price)) throw 'NaN';
+
+          return {
+            amount: price,
+            currency_code: priceIn,
+          };
+        } catch {
+          throw new HttpException(
+            'Failed to get price info',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+      }),
     );
-    return of([]);
+    return price;
   }
 
-  getBalance(): Observable<any> {
+  getBalance(priceIn: string): Observable<any> {
     const path = '/v1/me/getbalance';
     const signature = this.createSignature('GET', path);
     const response = this.httpService.get(`${this.baseURL}${path}`, {
@@ -66,7 +99,31 @@ export class BitFlyerExchange extends ExchangeService {
       toArray(),
     );
 
-    return balance;
+    const total = balance.pipe(
+      mergeMap((item) => item),
+      concatMap((item) => {
+        if (item['currency_code'] !== priceIn) {
+          return this.getPrice(item['currency_code'], priceIn);
+        } else {
+          return of(item);
+        }
+      }),
+      reduce(
+        (current, x) => {
+          current.amount += parseFloat(x['amount']);
+          return current;
+        },
+        {
+          currency_code: priceIn,
+          amount: 0,
+        },
+      ),
+    );
+
+    return forkJoin({
+      balance,
+      total,
+    });
   }
 
   buy(pair: string, amount?: number, stopLoss?: number): Observable<any> {

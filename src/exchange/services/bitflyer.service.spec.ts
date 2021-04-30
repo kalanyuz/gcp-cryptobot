@@ -1,8 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BitFlyerExchange } from './bitflyer.service';
-import { map, filter } from 'rxjs/operators';
-import { from, of } from 'rxjs';
-import { HttpModule, HttpService } from '@nestjs/common';
+import { of } from 'rxjs';
+import {
+  HttpModule,
+  HttpService,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import configuration from '../../services/configs/configurations';
 import { BotConfigService } from '../../services/configs/botconfigs.service';
@@ -24,35 +28,23 @@ describe('ExchangeService', () => {
       { currency_code: 'ETH', amount: 0.039944, available: 0.039944 },
       { currency_code: 'ETC', amount: 0, available: 0 },
       { currency_code: 'LTC', amount: 0, available: 0 },
-      { currency_code: 'MONA', amount: 0, available: 0 },
-      { currency_code: 'LSK', amount: 0, available: 0 },
-      { currency_code: 'XRP', amount: 0, available: 0 },
-      { currency_code: 'BAT', amount: 0, available: 0 },
-      { currency_code: 'XLM', amount: 0, available: 0 },
-      { currency_code: 'XEM', amount: 0, available: 0 },
-      { currency_code: 'XTZ', amount: 0, available: 0 },
     ],
   };
 
-  const ticker = from([
-    {
+  const tickerBTC = {
+    status: 200,
+    statusText: 'OK',
+    headers: {},
+    config: {},
+    data: {
       product_code: 'BTC_JPY',
       state: 'RUNNING',
       timestamp: '2021-04-27T10:58:42.25',
       tick_id: 12384084,
       best_bid: 5931540,
       best_ask: 5934050,
-      best_bid_size: 0.1278,
-      best_ask_size: 0.00148002,
-      total_bid_depth: 465.88439264,
-      total_ask_depth: 814.21740351,
-      market_bid_size: 0,
-      market_ask_size: 0,
-      ltp: 5934097,
-      volume: 6827.70964118,
-      volume_by_product: 4571.48797195,
     },
-  ]);
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -71,20 +63,92 @@ describe('ExchangeService', () => {
     service = new BitFlyerExchange(httpClient, config);
   });
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
+  /**
+   * The key to making this test work is passing it the the done keyword, otherwise it will finish before the data is emitted.
+   * https://fireship.io/snippets/testing-rxjs-observables-with-jest/
+   */
+  it('should extract price of a crypto', (done) => {
+    jest.spyOn(httpClient, 'get').mockReturnValue(of(tickerBTC));
+    const price = service.getPrice('BTC', 'JPY');
+
+    price.subscribe({
+      next: (x) => {
+        expect(x).toMatchObject({
+          amount: 5932795,
+          currency_code: 'JPY',
+        });
+      },
+      complete: () => done(),
+    });
   });
 
-  it('should get filtered balance', async () => {
-    const httpGet = jest
-      .spyOn(httpClient, 'get')
-      .mockReturnValueOnce(of(response));
+  it('should reject when price data is incorrect', (done) => {
+    jest.spyOn(httpClient, 'get').mockReturnValue(
+      of({
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: {},
+        data: {
+          product_code: 'BTC_JPY',
+          best_bid: undefined,
+          best_ask: 5934050,
+        },
+      }),
+    );
+    const price = service.getPrice('BTC', 'JPY');
 
-    const filtered = service.getBalance().toPromise();
-    expect(filtered).resolves.toEqual([
-      { currency_code: 'JPY', amount: 42260, available: 17360 },
-      { currency_code: 'BTC', amount: 0.02357742, available: 0.02357742 },
-      { currency_code: 'ETH', amount: 0.039944, available: 0.039944 },
-    ]);
+    price.subscribe({
+      complete: () => done(),
+      error: (error) => {
+        expect(error).toMatchObject(
+          new HttpException('Failed to get price info', HttpStatus.BAD_REQUEST),
+        );
+        done();
+      },
+    });
+  });
+
+  it('should filter out balance that is 0', (done) => {
+    jest.spyOn(service, 'getPrice').mockReturnValue(
+      of({
+        amount: 0.02357742,
+        currency_code: 'BTC',
+      }),
+    );
+    jest.spyOn(httpClient, 'get').mockReturnValueOnce(of(response));
+    const filtered = service.getBalance('BTC');
+
+    filtered.subscribe({
+      next: (x) => {
+        expect(x.balance).toMatchObject([
+          { currency_code: 'JPY', amount: 42260, available: 17360 },
+          { currency_code: 'BTC', amount: 0.02357742, available: 0.02357742 },
+          { currency_code: 'ETH', amount: 0.039944, available: 0.039944 },
+        ]);
+      },
+      complete: () => done(),
+    });
+  });
+
+  it('should correctly calculate output balance', (done) => {
+    jest.spyOn(service, 'getPrice').mockReturnValue(
+      of({
+        amount: 0.02357742,
+        currency_code: 'BTC',
+      }),
+    );
+    jest.spyOn(httpClient, 'get').mockReturnValueOnce(of(response));
+    const filtered = service.getBalance('BTC');
+
+    filtered.subscribe({
+      next: (x) => {
+        expect(x.total).toMatchObject({
+          amount: 0.07073226,
+          currency_code: 'BTC',
+        });
+      },
+      complete: () => done(),
+    });
   });
 });

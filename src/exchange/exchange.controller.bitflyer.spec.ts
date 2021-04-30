@@ -33,8 +33,8 @@ describe('ExchangeController', () => {
   });
 
   it('should be defined', () => {
-    expect(controller.makeSellOrder('empty')).resolves.toThrow(
-      'Could not create sell order',
-    );
+    // expect(controller.makeSellOrder('empty')).resolves.toThrow(
+    //   'Could not create sell order',
+    // );
   });
 });
