@@ -128,16 +128,30 @@ export class BitFlyerExchange extends ExchangeService {
 
   buy(pair: string, amount?: number, stopLoss?: number): Observable<any> {
     /* get balance, compute total asset, allocate */
-    return new Observable();
+    /* if amount is not specified, getBalance and check rebalancing configuration */
+    const path = '/v1/me/sendchildorder';
+    const requestBody = JSON.stringify({
+      product_code: pair,
+      child_order_type: 'MARKET',
+      side: 'BUY',
+      size: amount,
+      time_in_force: 'GTC',
+    });
+    const signature = this.createSignature('POST', path, requestBody);
+    const response = this.httpService.post(this.baseURL + path, requestBody, {
+      headers: signature,
+    });
+    return response;
   }
 
-  sell(pair: string): Observable<any> {
+  sell(pair: string, amount?: number): Observable<any> {
+    /* if amount is not specified, getBalance and sell all */
     const path = '/v1/me/sendchildorder';
     const requestBody = JSON.stringify({
       product_code: pair,
       child_order_type: 'MARKET',
       side: 'SELL',
-      size: 0,
+      size: amount,
       time_in_force: 'GTC',
     });
     const signature = this.createSignature('POST', path, requestBody);
