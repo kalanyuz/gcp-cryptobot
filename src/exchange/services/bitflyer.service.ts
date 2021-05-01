@@ -144,11 +144,33 @@ export class BitFlyerExchange extends ExchangeService {
     return response;
   }
 
-  sell(pair: string, amount?: number): Observable<any> {
-    /* if amount is not specified, getBalance and sell all */
+  async sell(
+    asset: string,
+    sellFor: string,
+    amount?: number,
+  ): Promise<Observable<any>> {
+    // if amount is not specified, getBalance and sell all
+    if (amount === undefined) {
+      try {
+        const myAsset = await this.getBalance(sellFor)
+          .pipe(
+            mergeMap((x) => x.balance),
+            filter((x) => x['currency_code'] === asset),
+          )
+          .toPromise();
+
+        amount = myAsset['amount'];
+      } catch (error) {
+        throw new HttpException(
+          'Could not find an asset to sell.',
+          HttpStatus.EXPECTATION_FAILED,
+        );
+      }
+    }
+
     const path = '/v1/me/sendchildorder';
     const requestBody = JSON.stringify({
-      product_code: pair,
+      product_code: `${asset}_${sellFor}`,
       child_order_type: 'MARKET',
       side: 'SELL',
       size: amount,
