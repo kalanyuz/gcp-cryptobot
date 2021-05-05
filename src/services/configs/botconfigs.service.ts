@@ -11,18 +11,20 @@ export class BotConfigService {
     return this.configs.get<Configs>('configurations');
   }
 
-  get rebalance(): boolean {
-    const isRebalance = this.configs.get<boolean>('configurations.rebalance');
-    return isRebalance;
+  get rebalanceProfiles(): string[] {
+    const rebalanceProfiles = this.configs.get<string[]>(
+      'configurations.rebalance',
+    );
+    return rebalanceProfiles;
   }
 
-  get rebalanceTo(): string {
-    const rebalanceTo = this.configs.get<string>('configurations.rebalance_to');
+  get tradeCurrency(): string {
+    const rebalanceTo = this.configs.get<string>('configurations.trade_with');
     return rebalanceTo;
   }
 
-  get tradingPairs(): any {
-    const pairs = this.configs.get<string>('configurations.trading_pairs');
+  get tradingPairs(): string[] {
+    const pairs = this.configs.get<string[]>('configurations.trading_pairs');
     return pairs;
   }
 }

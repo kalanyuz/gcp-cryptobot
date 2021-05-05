@@ -1,6 +1,9 @@
 configurations:
-  rebalance: true
-  rebalance_to: 'JPY'
+  trade_with: 'JPY'
+  rebalance:
+    - 'BTC:70'
+    - 'ETH:25'
+    - 'XRP:5'
   trading_pairs:
     - 'BTC:JPY'
     - 'ETH:JPY'
