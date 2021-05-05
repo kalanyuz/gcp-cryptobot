@@ -226,4 +226,58 @@ describe('ExchangeService', () => {
     expect(getBalance).toBeCalledTimes(1);
     done();
   });
+
+  it('should find the amount of asset to buy when not specified', async (done) => {
+    const getBalance = jest
+      .spyOn(service, 'getBalance')
+      .mockReturnValue(of(allAsset));
+
+    jest.spyOn(httpClient, 'post').mockReturnValueOnce(of(orderResponse));
+    const filtered = await service.buy('DOGE', 'BTC');
+
+    filtered.subscribe({
+      next: (x) => {
+        expect(x).toEqual(orderResponse);
+      },
+      complete: () => done(),
+    });
+    expect(getBalance).toBeCalledWith('BTC');
+    expect(getBalance).toBeCalledTimes(1);
+  });
+
+  it('should not find the amount of asset to buy when specified', async (done) => {
+    const getBalance = jest
+      .spyOn(service, 'getBalance')
+      .mockReturnValue(of(''));
+
+    jest.spyOn(httpClient, 'post').mockReturnValueOnce(of(orderResponse));
+    const filtered = await service.buy('DOGE', 'BTC', 0.01);
+
+    filtered.subscribe({
+      next: (x) => {
+        expect(x).toEqual(orderResponse);
+      },
+      complete: () => done(),
+    });
+    expect(getBalance).not.toBeCalled();
+  });
+
+  it('should throw when asset to buy with is not found', async (done) => {
+    const getBalance = jest
+      .spyOn(service, 'getBalance')
+      .mockReturnValue(of(allAsset));
+
+    jest.spyOn(httpClient, 'post').mockReturnValueOnce(of(orderResponse));
+    const filtered = service.buy('BTC', 'DOGE');
+
+    expect(filtered).rejects.toThrow(
+      new HttpException(
+        'Could not calculate total available asset',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      ),
+    );
+    expect(getBalance).toBeCalledWith('DOGE');
+    expect(getBalance).toBeCalledTimes(1);
+    done();
+  });
 });

@@ -10,16 +10,13 @@ export abstract class ExchangeService {
   abstract getBalance(priceIn: string): Observable<any>;
 
   abstract buy(
-    pair: string,
+    asset: string,
+    using: string,
     amount?: number,
     stopLoss?: number,
-  ): Observable<any>;
+  ): any;
 
-  abstract sell(
-    asset: string,
-    sellFor: string,
-    amount?: number,
-  ): Promise<Observable<any>>;
+  abstract sell(asset: string, sellFor: string, amount?: number): any;
 
   abstract clear(pair: string): Observable<any>;
 }

@@ -8,9 +8,9 @@ services:
     volumes:
       - ./:/usr/src/app
     ports:
-      - 3000:3000
-      - 9229:9229
+      - 3001:3001
+      - 9339:9339
     tty: true
     environment:
       - NODE_ENV=development
-      - PORT=3000
+      - PORT=3001

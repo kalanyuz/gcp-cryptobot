@@ -126,12 +126,35 @@ export class BitFlyerExchange extends ExchangeService {
     });
   }
 
-  buy(pair: string, amount?: number, stopLoss?: number): Observable<any> {
+  async buy(
+    asset: string,
+    using: string,
+    amount?: number,
+    stopLoss?: number,
+  ): Promise<Observable<any>> {
     /* get balance, compute total asset, allocate */
     /* if amount is not specified, getBalance and check rebalancing configuration */
+    if (amount === undefined) {
+      try {
+        const myAsset = await this.getBalance(using)
+          .pipe(
+            map((x) => x.total),
+            filter((x) => x.currency_code === using),
+          )
+          .toPromise();
+
+        amount = myAsset['amount'];
+      } catch (error) {
+        throw new HttpException(
+          'Could not calculate total available asset',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+    }
+
     const path = '/v1/me/sendchildorder';
     const requestBody = JSON.stringify({
-      product_code: pair,
+      product_code: `${asset}_${using}`,
       child_order_type: 'MARKET',
       side: 'BUY',
       size: amount,
