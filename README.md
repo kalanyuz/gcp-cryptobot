@@ -4,10 +4,9 @@
 
 DIY(deploy it yourself) containerized Serverless crypto trading API designed to be used with indicator webhooks designed to be primarily run on Google Cloud Platform [(Cloud Run)](https://cloud.google.com/run). No centralized database required. You take control of all your API keys. Easily customizable to support various exchanges.
 
-## System diagram (v0.1)
+## System diagram and example use cases (v0.1)
 
-![system diagram](https://storage.googleapis.com/gcp-cryptobot/v01diagram.png)
-Future roadmap sneakpeaks can be checked out [here](https://docs.google.com/presentation/d/1maTXHVqpvblkvHI5o0LS2dbBDzrYqqwhju4vWyNwFb4/edit?usp=sharing)
+![system diagram](https://storage.googleapis.com/gcp-cryptobot/v011diagram.png)
 
 ## Disclaimer
 
@@ -37,7 +36,7 @@ $ docker-compose exec app yarn start
 $ docker-compose exec app yarn test
 ```
 
-## Appendix
+## Additional resources
 
 - [Cloud Run community FAQs](https://github.com/ahmetb/cloud-run-faq)
 
