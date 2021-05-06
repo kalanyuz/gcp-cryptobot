@@ -1,0 +1,27 @@
+name: Build & Tests
+on:
+  push:
+    paths:
+      - 'src/**'
+      - 'test/**'
+      - 'package.json'
+      - 'yarn.lock'
+      - 'Dockerfile'
+      - '.github/workflows/build.yaml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@master
+        name: Setup NODE
+        with:
+          node-version: '12.x'
+
+      - name: Test
+        run: |
+          docker build .
+          docker-compose up -d
+          docker-compose exec -T app yarn install
+          docker-compose exec -T app yarn test

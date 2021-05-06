@@ -1,16 +1,26 @@
 import { Observable } from 'rxjs';
 import { HttpService, Injectable } from '@nestjs/common';
+import { SecretsService } from '../services/secrets/secrets.service';
 
 @Injectable()
 export abstract class ExchangeService {
-  constructor(protected httpService: HttpService) {}
+  constructor(
+    protected httpService: HttpService,
+    protected secretService: SecretsService,
+  ) {}
 
-  protected abstract getBalance(pair: string): Observable<any>;
+  abstract getPrice(ofProduct: string, priceIn: string): Observable<any>;
+
+  abstract getBalance(priceIn: string): Observable<any>;
+
   abstract buy(
-    pair: string,
+    asset: string,
+    using: string,
     amount?: number,
     stopLoss?: number,
-  ): Observable<any>;
-  abstract sell(pair: string): Observable<any>;
+  ): any;
+
+  abstract sell(asset: string, sellFor: string, amount?: number): any;
+
   abstract clear(pair: string): Observable<any>;
 }

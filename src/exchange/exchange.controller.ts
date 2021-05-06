@@ -15,6 +15,6 @@ export class ExchangeController {
 
   @Get('sell')
   async makeSellOrder(@Body() body: any): Promise<Observable<any>> {
-    return this.service.sell('');
+    return this.service.sell('JPY', 'BTC');
   }
 }
