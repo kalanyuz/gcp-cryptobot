@@ -17,7 +17,7 @@ jobs:
       - uses: actions/setup-node@master
         name: Setup NODE
         with:
-          node-version: '12.x'
+          node-version: '14.x'
 
       - name: Test
         run: |
