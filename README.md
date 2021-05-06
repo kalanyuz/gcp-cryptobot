@@ -1,3 +1,5 @@
+![](https://github.com/kalanyuz/gcp-cryptobot/workflows/Build%20&%20Tests/badge.svg)
+
 ## Description
 
 DIY(deploy it yourself) containerized Serverless crypto trading API designed to be used with indicator webhooks. Designed to be primarily run on Google Cloud Platform (Cloud Run). No centralized database required. You take control of all your API keys. Designed to be easily customizable to support various exchanges.
