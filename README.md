@@ -36,7 +36,7 @@ $ docker-compose exec app yarn start
 $ docker-compose exec app yarn test
 ```
 
-## Appendix
+## Additional resources
 
 - [Cloud Run community FAQs](https://github.com/ahmetb/cloud-run-faq)
 
