@@ -233,7 +233,7 @@ describe('ExchangeService', () => {
       .mockReturnValue(of(allAsset));
 
     jest.spyOn(httpClient, 'post').mockReturnValueOnce(of(orderResponse));
-    const filtered = await service.buy('DOGE', 'BTC');
+    const filtered = await service.buy('ETH', 'BTC');
 
     filtered.subscribe({
       next: (x) => {
@@ -279,5 +279,32 @@ describe('ExchangeService', () => {
     expect(getBalance).toBeCalledWith('DOGE');
     expect(getBalance).toBeCalledTimes(1);
     done();
+  });
+
+  it('should rebalance correctly when amount is not specified', async (done) => {
+    jest.spyOn(service, 'getBalance').mockReturnValue(of(allAsset));
+    const buyRequest = jest
+      .spyOn(httpClient, 'post')
+      .mockReturnValueOnce(of(orderResponse));
+    const filtered = await service.buy('ETH', 'BTC');
+
+    filtered.subscribe({
+      next: (x) => {
+        expect(x).toEqual(orderResponse);
+      },
+      complete: () => done(),
+    });
+
+    expect(buyRequest).toHaveBeenCalledWith(
+      expect.anything(),
+      JSON.stringify({
+        product_code: `ETH_BTC`,
+        child_order_type: 'MARKET',
+        side: 'BUY',
+        size: 0.017683065,
+        time_in_force: 'GTC',
+      }),
+      expect.anything(),
+    );
   });
 });

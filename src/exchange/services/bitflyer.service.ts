@@ -13,7 +13,7 @@ import {
   reduce,
 } from 'rxjs/operators';
 import { BotConfigService } from '../../services/configs/botconfigs.service';
-import { Observable, of } from 'rxjs';
+import { config, Observable, of } from 'rxjs';
 import { ExchangeService } from '../exchange.service';
 import * as crypto from 'crypto';
 import { forkJoin } from 'rxjs';
@@ -26,7 +26,7 @@ export class BitFlyerExchange extends ExchangeService {
 
   constructor(httpService: HttpService, private configs: BotConfigService) {
     super(httpService);
-    if (configs.rebalanceTo !== 'JPY') {
+    if (configs.tradeCurrency !== 'JPY') {
       throw new HttpException(
         'BitFlyer module currently supports only JPY based trading pairs',
         HttpStatus.EXPECTATION_FAILED,
@@ -144,6 +144,12 @@ export class BitFlyerExchange extends ExchangeService {
           .toPromise();
 
         amount = myAsset['amount'];
+        const ratio =
+          this.configs.rebalanceProfiles
+            ?.filter((x) => x.asset === asset)
+            .map((x) => x.ratio as number)[0] ?? 1;
+
+        amount *= ratio;
       } catch (error) {
         throw new HttpException(
           'Could not calculate total available asset',

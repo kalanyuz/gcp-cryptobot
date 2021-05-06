@@ -11,11 +11,19 @@ export class BotConfigService {
     return this.configs.get<Configs>('configurations');
   }
 
-  get rebalanceProfiles(): string[] {
-    const rebalanceProfiles = this.configs.get<string[]>(
-      'configurations.rebalance',
-    );
-    return rebalanceProfiles;
+  get rebalanceProfiles(): any[] | null {
+    try {
+      const rebalanceProfiles = this.configs
+        .get<string[]>('configurations.rebalance')
+        .map((item) => item.split(':'))
+        .map((item) => ({
+          asset: item[0],
+          ratio: parseInt(item[1]) / 100,
+        }));
+      return rebalanceProfiles;
+    } catch (error) {
+      return null;
+    }
   }
 
   get tradeCurrency(): string {
@@ -23,8 +31,18 @@ export class BotConfigService {
     return rebalanceTo;
   }
 
-  get tradingPairs(): string[] {
-    const pairs = this.configs.get<string[]>('configurations.trading_pairs');
-    return pairs;
+  get tradingPairs(): any[] | null {
+    try {
+      const pairs = this.configs
+        .get<string[]>('configurations.trading_pairs')
+        .map((item) => item.split(':'))
+        .map((item) => ({
+          asset: item[0],
+          tradeWith: item[1],
+        }));
+      return pairs;
+    } catch (error) {
+      return null;
+    }
   }
 }
