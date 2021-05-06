@@ -7,7 +7,6 @@ DIY(deploy it yourself) containerized Serverless crypto trading API designed to 
 ## System diagram and example use cases (v0.1)
 
 ![system diagram](https://storage.googleapis.com/gcp-cryptobot/v011diagram.png)
-Future roadmap sneakpeaks can be checked out [here](https://docs.google.com/presentation/d/1maTXHVqpvblkvHI5o0LS2dbBDzrYqqwhju4vWyNwFb4/edit?usp=sharing)
 
 ## Disclaimer
 
