@@ -21,7 +21,7 @@ jobs:
 
       - name: Test
         run: |
-          docker build
+          docker build .
           docker-compose up -d
           docker-compose exec -T app yarn install
           docker-compose exec -T app yarn test
