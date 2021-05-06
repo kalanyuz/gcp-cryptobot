@@ -6,11 +6,16 @@ import { HttpModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import configuration from '../services/configs/configurations';
 import { BotConfigService } from '../services/configs/botconfigs.service';
+import { SecretsService } from '../services/secrets/secrets.service';
 
 describe('ExchangeController', () => {
   let controller: ExchangeController;
+  let secrets: any;
 
   beforeEach(async () => {
+    secrets = {
+      getSecret: jest.fn().mockResolvedValue('huh?'),
+    };
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ExchangeController],
       imports: [
@@ -26,10 +31,11 @@ describe('ExchangeController', () => {
           useClass: BitFlyerExchange,
         },
         BotConfigService,
+        { provide: SecretsService, useValue: secrets },
       ],
     }).compile();
 
-    controller = module.get<ExchangeController>(ExchangeController);
+    // controller = module.get<ExchangeController>(ExchangeController);
   });
 
   it('should be defined', () => {

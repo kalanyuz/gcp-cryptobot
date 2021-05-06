@@ -4,6 +4,7 @@ import { ExchangeController } from './exchange/exchange.controller';
 import { ExchangeService } from './exchange/exchange.service';
 import { BitFlyerExchange } from './exchange/services/bitflyer.service';
 import { BotConfigService } from './services/configs/botconfigs.service';
+import { SecretsService } from './services/secrets/secrets.service';
 import configuration from './services/configs/configurations';
 
 @Module({
@@ -20,6 +21,7 @@ import configuration from './services/configs/configurations';
       useClass: BitFlyerExchange,
     },
     BotConfigService,
+    SecretsService,
   ],
   controllers: [ExchangeController],
 })

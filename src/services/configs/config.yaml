@@ -1,4 +1,6 @@
 configurations:
+  secret_keyname: 'BITFLYER_SECRET'
+  api_keyname: 'BITFLYER_APIKEY'
   trade_with: 'JPY'
   rebalance:
     - 'BTC:70'

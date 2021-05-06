@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Configs, TradingPairs } from '../entities/configs';
+import { Configs } from '../entities/configs';
 
 @Injectable()
 export class BotConfigService {
   private readonly client;
   constructor(private configs: ConfigService) {}
 
-  get settings(): Configs {
-    return this.configs.get<Configs>('configurations');
+  get settings(): any {
+    return this.configs.get<any>('configurations');
   }
 
   get rebalanceProfiles(): any[] | null {

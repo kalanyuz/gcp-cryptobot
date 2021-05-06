@@ -10,10 +10,12 @@ import {
 import { ConfigModule } from '@nestjs/config';
 import configuration from '../../services/configs/configurations';
 import { BotConfigService } from '../../services/configs/botconfigs.service';
+import { SecretsService } from '../../services/secrets/secrets.service';
 
 describe('ExchangeService', () => {
   let service: BitFlyerExchange;
   let httpClient: HttpService;
+  let secrets: any;
   let config: BotConfigService;
 
   /**
@@ -72,6 +74,9 @@ describe('ExchangeService', () => {
   };
 
   beforeEach(async () => {
+    secrets = {
+      getSecret: jest.fn().mockResolvedValue('huh?'),
+    };
     const module: TestingModule = await Test.createTestingModule({
       imports: [
         HttpModule,
@@ -80,12 +85,17 @@ describe('ExchangeService', () => {
           load: [configuration],
         }),
       ],
-      providers: [BitFlyerExchange, BotConfigService],
+      providers: [
+        BitFlyerExchange,
+        BotConfigService,
+        { provide: SecretsService, useValue: secrets },
+      ],
     }).compile();
 
     config = module.get<BotConfigService>(BotConfigService);
     httpClient = module.get<HttpService>(HttpService);
-    service = new BitFlyerExchange(httpClient, config);
+
+    service = new BitFlyerExchange(httpClient, config, secrets);
   });
 
   /**

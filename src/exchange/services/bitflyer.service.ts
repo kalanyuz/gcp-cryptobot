@@ -17,6 +17,7 @@ import { config, Observable, of } from 'rxjs';
 import { ExchangeService } from '../exchange.service';
 import * as crypto from 'crypto';
 import { forkJoin } from 'rxjs';
+import { SecretsService } from '../../services/secrets/secrets.service';
 
 @Injectable()
 export class BitFlyerExchange extends ExchangeService {
@@ -24,15 +25,34 @@ export class BitFlyerExchange extends ExchangeService {
   key: string = '';
   secret: string = '';
 
-  constructor(httpService: HttpService, private configs: BotConfigService) {
-    super(httpService);
+  constructor(
+    httpService: HttpService,
+    private configs: BotConfigService,
+    secretService: SecretsService,
+  ) {
+    super(httpService, secretService);
     if (configs.tradeCurrency !== 'JPY') {
       throw new HttpException(
         'BitFlyer module currently supports only JPY based trading pairs',
-        HttpStatus.EXPECTATION_FAILED,
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
-    // TODO: Add secret manager
+
+    const apiKeyName: string = configs.settings['api_keyname'];
+    const secretKeyName: string = configs.settings['secret_keyname'];
+    secretService
+      .getSecret(apiKeyName)
+      .then((key) => {
+        this.key = key;
+      })
+      .catch((error) => console.error(error));
+
+    secretService
+      .getSecret(secretKeyName)
+      .then((key) => {
+        this.secret = key;
+      })
+      .catch((error) => console.error(error));
   }
 
   private createSignature(method: string, path: string, body?: string): any {
