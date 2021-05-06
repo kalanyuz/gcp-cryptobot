@@ -1,18 +1,58 @@
-import { HttpService, Injectable } from '@nestjs/common';
-import { combineLatest, Observable, zip } from 'rxjs';
+import {
+  HttpException,
+  HttpService,
+  HttpStatus,
+  Injectable,
+} from '@nestjs/common';
+import {
+  map,
+  filter,
+  mergeMap,
+  toArray,
+  concatMap,
+  reduce,
+} from 'rxjs/operators';
+import { BotConfigService } from '../../services/configs/botconfigs.service';
+import { config, Observable, of } from 'rxjs';
 import { ExchangeService } from '../exchange.service';
-import { map, filter, mergeMap, combineAll, toArray } from 'rxjs/operators';
 import * as crypto from 'crypto';
+import { forkJoin } from 'rxjs';
+import { SecretsService } from '../../services/secrets/secrets.service';
 
 @Injectable()
 export class BitFlyerExchange extends ExchangeService {
   baseURL: string = 'https://api.bitflyer.com';
-  key: string;
-  secret: string;
+  key: string = '';
+  secret: string = '';
 
-  constructor(httpService: HttpService) {
-    super(httpService);
-    // TODO: Add secret manager
+  constructor(
+    httpService: HttpService,
+    private configs: BotConfigService,
+    secretService: SecretsService,
+  ) {
+    super(httpService, secretService);
+    if (configs.tradeCurrency !== 'JPY') {
+      throw new HttpException(
+        'BitFlyer module currently supports only JPY based trading pairs',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    const apiKeyName: string = configs.settings['api_keyname'];
+    const secretKeyName: string = configs.settings['secret_keyname'];
+    secretService
+      .getSecret(apiKeyName)
+      .then((key) => {
+        this.key = key;
+      })
+      .catch((error) => console.error(error));
+
+    secretService
+      .getSecret(secretKeyName)
+      .then((key) => {
+        this.secret = key;
+      })
+      .catch((error) => console.error(error));
   }
 
   private createSignature(method: string, path: string, body?: string): any {
@@ -31,44 +71,165 @@ export class BitFlyerExchange extends ExchangeService {
     };
   }
 
-  protected getBalance(): Observable<any> {
+  getPrice(ofProduct: string, priceIn: string): Observable<any> {
+    const path = '/v1/ticker';
+    const response = this.httpService.get(`${this.baseURL}${path}`);
+    const price = response.pipe(
+      map((x) => x.data),
+      map((x) => {
+        if (x['product_code'] !== `${ofProduct}_${priceIn}`) {
+          console.error(
+            'Price info returned different from what is requested.',
+          );
+          throw new HttpException(
+            'Failed to get price info',
+            HttpStatus.EXPECTATION_FAILED,
+          );
+        }
+        try {
+          const price =
+            (parseFloat(x['best_bid']) + parseFloat(x['best_ask'])) / 2.0;
+          if (isNaN(price)) throw 'NaN';
+
+          return {
+            amount: price,
+            currency_code: priceIn,
+          };
+        } catch {
+          throw new HttpException(
+            'Failed to get price info',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+      }),
+    );
+    return price;
+  }
+
+  getBalance(priceIn: string): Observable<any> {
     const path = '/v1/me/getbalance';
     const signature = this.createSignature('GET', path);
-    const response = this.httpService.get(`${this.baseURL}/v1/me/getbalance`, {
+    const response = this.httpService.get(`${this.baseURL}${path}`, {
       headers: signature,
     });
-    // TODO: load currency of interests from configuration file
+
     const balance = response.pipe(
       mergeMap((x) => x.data),
-      filter((x) => {
-        return ['JPY', 'BTC', 'ETH'].includes(x['currency_code']);
-      }),
+      filter((x) => x['amount'] > 0),
       toArray(),
     );
 
-    return balance;
+    const total = balance.pipe(
+      mergeMap((item) => item),
+      concatMap((item) => {
+        if (item['currency_code'] !== priceIn) {
+          return this.getPrice(item['currency_code'], priceIn);
+        } else {
+          return of(item);
+        }
+      }),
+      reduce(
+        (current, x) => {
+          current.amount += parseFloat(x['amount']);
+          return current;
+        },
+        {
+          currency_code: priceIn,
+          amount: 0,
+        },
+      ),
+    );
+
+    return forkJoin({
+      balance,
+      total,
+    });
   }
 
-  buy(pair: string, amount?: number, stopLoss?: number): Observable<any> {
-    return new Observable();
-  }
+  async buy(
+    asset: string,
+    using: string,
+    amount?: number,
+    stopLoss?: number,
+  ): Promise<Observable<any>> {
+    /* get balance, compute total asset, allocate */
+    /* if amount is not specified, getBalance and check rebalancing configuration */
+    if (amount === undefined) {
+      try {
+        const myAsset = await this.getBalance(using)
+          .pipe(
+            map((x) => x.total),
+            filter((x) => x.currency_code === using),
+          )
+          .toPromise();
 
-  sell(pair: string): Observable<any> {
+        amount = myAsset['amount'];
+        const ratio =
+          this.configs.rebalanceProfiles
+            ?.filter((x) => x.asset === asset)
+            .map((x) => x.ratio as number)[0] ?? 1;
+
+        amount *= ratio;
+      } catch (error) {
+        throw new HttpException(
+          'Could not calculate total available asset',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+    }
+
     const path = '/v1/me/sendchildorder';
     const requestBody = JSON.stringify({
-      product_code: pair,
+      product_code: `${asset}_${using}`,
       child_order_type: 'MARKET',
-      side: 'SELL',
-      size: 0,
+      side: 'BUY',
+      size: amount,
       time_in_force: 'GTC',
     });
-    // const signature = this.createSignature('POST', path, requestBody);
-    // const response = this.httpService.post(this.baseURL + path, requestBody, {
-    //   headers: signature,
-    // });
-    const balance = this.getBalance();
-    return balance;
-    // return response;
+    const signature = this.createSignature('POST', path, requestBody);
+    const response = this.httpService.post(this.baseURL + path, requestBody, {
+      headers: signature,
+    });
+    return response;
+  }
+
+  async sell(
+    asset: string,
+    sellFor: string,
+    amount?: number,
+  ): Promise<Observable<any>> {
+    // if amount is not specified, getBalance and sell all
+    if (amount === undefined) {
+      try {
+        const myAsset = await this.getBalance(sellFor)
+          .pipe(
+            mergeMap((x) => x.balance),
+            filter((x) => x['currency_code'] === asset),
+          )
+          .toPromise();
+
+        amount = myAsset['amount'];
+      } catch (error) {
+        throw new HttpException(
+          'Could not find an asset to sell.',
+          HttpStatus.EXPECTATION_FAILED,
+        );
+      }
+    }
+
+    const path = '/v1/me/sendchildorder';
+    const requestBody = JSON.stringify({
+      product_code: `${asset}_${sellFor}`,
+      child_order_type: 'MARKET',
+      side: 'SELL',
+      size: amount,
+      time_in_force: 'GTC',
+    });
+    const signature = this.createSignature('POST', path, requestBody);
+    const response = this.httpService.post(this.baseURL + path, requestBody, {
+      headers: signature,
+    });
+    return response;
   }
 
   clear(pair: string): Observable<any> {
