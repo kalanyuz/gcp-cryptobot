@@ -21,6 +21,4 @@ export abstract class ExchangeService {
   ): any;
 
   abstract sell(asset: string, sellFor: string, amount?: number): any;
-
-  abstract clear(pair: string): Observable<any>;
 }

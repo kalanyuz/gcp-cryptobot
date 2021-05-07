@@ -37,7 +37,6 @@ export class BitFlyerExchange extends ExchangeService {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
-
     const apiKeyName: string = configs.settings['api_keyname'];
     const secretKeyName: string = configs.settings['secret_keyname'];
     secretService
