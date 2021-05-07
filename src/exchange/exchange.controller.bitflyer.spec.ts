@@ -2,15 +2,50 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ExchangeController } from './exchange.controller';
 import { BitFlyerExchange } from './services/bitflyer.service';
 import { ExchangeService } from './exchange.service';
-import { HttpModule } from '@nestjs/common';
+import { HttpModule, HttpService } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import configuration from '../services/configs/configurations';
 import { BotConfigService } from '../services/configs/botconfigs.service';
 import { SecretsService } from '../services/secrets/secrets.service';
+import { of } from 'rxjs';
+import { BotRequest } from './entities/exchange';
 
 describe('ExchangeController', () => {
   let controller: ExchangeController;
+  let service: BitFlyerExchange;
+  let httpClient: HttpService;
   let secrets: any;
+  let config: BotConfigService;
+
+  const botReq: BotRequest = {
+    asset: 'ETH',
+    denominator: 'BTC',
+    amount: undefined,
+    price: undefined,
+    time: undefined,
+  };
+
+  const allAsset = {
+    balance: [
+      { currency_code: 'JPY', amount: 42260, available: 17360 },
+      { currency_code: 'BTC', amount: 0.02357742, available: 0.02357742 },
+      { currency_code: 'ETH', amount: 0.039944, available: 0.039944 },
+    ],
+    total: {
+      amount: 0.07073226,
+      currency_code: 'BTC',
+    },
+  };
+
+  const orderResponse = {
+    status: 200,
+    statusText: 'OK',
+    headers: {},
+    config: {},
+    data: {
+      child_order_acceptance_id: 'JRF20150707-050237-639234',
+    },
+  };
 
   beforeEach(async () => {
     secrets = {
@@ -35,12 +70,107 @@ describe('ExchangeController', () => {
       ],
     }).compile();
 
-    // controller = module.get<ExchangeController>(ExchangeController);
+    config = module.get<BotConfigService>(BotConfigService);
+    httpClient = module.get<HttpService>(HttpService);
+    service = new BitFlyerExchange(httpClient, config, secrets);
+    controller = new ExchangeController(service);
   });
 
-  it('should be defined', () => {
-    // expect(controller.makeSellOrder('empty')).resolves.toThrow(
-    //   'Could not create sell order',
-    // );
+  it('Should throw when buy parameter type is not correct', async (done) => {
+    const result = controller.makeBuyOrder({
+      asset: undefined,
+      denominator: undefined,
+    } as any);
+    expect(result).rejects.toThrow();
+    done();
+  });
+
+  it('Should throw when sell parameter type is not correct', async (done) => {
+    const result = controller.makeSellOrder({
+      asset: undefined,
+      denominator: undefined,
+    } as any);
+    expect(result).rejects.toThrow();
+    done();
+  });
+
+  it('Should buy correctly when amount is undefined', async (done) => {
+    jest.spyOn(httpClient, 'post').mockReturnValueOnce(of(orderResponse));
+    const getBalance = jest
+      .spyOn(service, 'getBalance')
+      .mockReturnValueOnce(of(allAsset));
+    const buyService = jest.spyOn(service, 'buy');
+    const response = await controller.makeBuyOrder(botReq);
+
+    expect(getBalance).toBeCalledWith('BTC');
+    expect(buyService).toBeCalledWith('ETH', 'BTC', undefined);
+
+    response.subscribe({
+      next: (x) => {
+        expect(x).toEqual(orderResponse);
+      },
+      complete: () => done(),
+    });
+  });
+
+  it('Should buy correctly when amount is defined', async (done) => {
+    jest.spyOn(httpClient, 'post').mockReturnValueOnce(of(orderResponse));
+    const getBalance = jest
+      .spyOn(service, 'getBalance')
+      .mockReturnValueOnce(of(allAsset));
+    const buyService = jest.spyOn(service, 'buy');
+    let botRegWithAmount = Object.assign({}, botReq);
+    botRegWithAmount.amount = 2;
+    const response = await controller.makeBuyOrder(botRegWithAmount);
+
+    expect(getBalance).not.toBeCalled();
+    expect(buyService).toBeCalledWith('ETH', 'BTC', 2);
+
+    response.subscribe({
+      next: (x) => {
+        expect(x).toEqual(orderResponse);
+      },
+      complete: () => done(),
+    });
+  });
+
+  it('Should sell correctly when amount is undefined', async (done) => {
+    jest.spyOn(httpClient, 'post').mockReturnValueOnce(of(orderResponse));
+    const getBalance = jest
+      .spyOn(service, 'getBalance')
+      .mockReturnValueOnce(of(allAsset));
+    const sellService = jest.spyOn(service, 'sell');
+    const response = await controller.makeSellOrder(botReq);
+
+    expect(getBalance).toBeCalledWith('BTC');
+    expect(sellService).toBeCalledWith('ETH', 'BTC', undefined);
+
+    response.subscribe({
+      next: (x) => {
+        expect(x).toEqual(orderResponse);
+      },
+      complete: () => done(),
+    });
+  });
+
+  it('Should sell correctly when amount is defined', async (done) => {
+    jest.spyOn(httpClient, 'post').mockReturnValueOnce(of(orderResponse));
+    const getBalance = jest
+      .spyOn(service, 'getBalance')
+      .mockReturnValueOnce(of(allAsset));
+    const sellService = jest.spyOn(service, 'sell');
+    let botRegWithAmount = Object.assign({}, botReq);
+    botRegWithAmount.amount = 2;
+    const response = await controller.makeSellOrder(botRegWithAmount);
+
+    expect(getBalance).not.toBeCalled();
+    expect(sellService).toBeCalledWith('ETH', 'BTC', 2);
+
+    response.subscribe({
+      next: (x) => {
+        expect(x).toEqual(orderResponse);
+      },
+      complete: () => done(),
+    });
   });
 });
