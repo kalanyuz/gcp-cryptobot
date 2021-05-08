@@ -9,9 +9,9 @@ export interface BotRequest {
   // What your asset is priced in (ie. BTC from ticker ETHBTC)
   denominator: string;
   // Amount to sell (optional)
-  amount: number | undefined;
+  amount?: number | undefined;
   // Closing price (aka. {{close}} in TradingView)
-  price: number | undefined;
+  price?: number | undefined;
   // Time of alert (aka. {{time}} in TradingView)
-  time: string | undefined;
+  time?: string | undefined;
 }

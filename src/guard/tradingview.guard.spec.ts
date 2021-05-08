@@ -26,10 +26,6 @@ describe('TradingViewGuard', () => {
     } as any;
   });
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
-  });
-
   it('should deny weird ipaddress(es)', () => {
     expect(service.checkAllowedAddress('0')).toBeFalsy();
     expect(service.checkAllowedAddress('')).toBeFalsy();

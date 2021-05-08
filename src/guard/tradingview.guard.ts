@@ -23,7 +23,8 @@ export class TradingViewGuard implements CanActivate {
     context: ExecutionContext,
   ): boolean | Promise<boolean> | Observable<boolean> {
     const ctx = context.switchToHttp().getRequest<Request>();
-    const forwardedIp = ctx.headers['x-forwarded-for'];
+    const forwardedIp: string = ctx.headers['x-forwarded-for'];
+    console.log(forwardedIp);
     return this.checkAllowedAddress(forwardedIp);
   }
 }

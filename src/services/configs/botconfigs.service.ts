@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Configs } from '../entities/configs';
+import { BotRequest } from '../../exchange/entities/exchange';
 
 @Injectable()
 export class BotConfigService {
@@ -31,14 +31,14 @@ export class BotConfigService {
     return rebalanceTo;
   }
 
-  get tradingPairs(): any[] | null {
+  get tradingPairs(): BotRequest[] | null {
     try {
       const pairs = this.configs
         .get<string[]>('configurations.trading_pairs')
         .map((item) => item.split(':'))
         .map((item) => ({
           asset: item[0],
-          tradeWith: item[1],
+          denominator: item[1],
         }));
       return pairs;
     } catch (error) {

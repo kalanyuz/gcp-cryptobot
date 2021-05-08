@@ -11,9 +11,10 @@ import {
   toArray,
   concatMap,
   reduce,
+  catchError,
 } from 'rxjs/operators';
 import { BotConfigService } from '../../services/configs/botconfigs.service';
-import { config, Observable, of } from 'rxjs';
+import { config, Observable, of, throwError } from 'rxjs';
 import { ExchangeService } from '../exchange.service';
 import * as crypto from 'crypto';
 import { forkJoin } from 'rxjs';
@@ -111,6 +112,10 @@ export class BitFlyerExchange extends ExchangeService {
           );
         }
       }),
+      catchError((err) => {
+        console.error(err.response.data);
+        return throwError(err);
+      }),
     );
     return price;
   }
@@ -126,6 +131,10 @@ export class BitFlyerExchange extends ExchangeService {
       mergeMap((x) => x.data),
       filter((x) => x['amount'] > 0),
       toArray<BitFlyerAsset>(),
+      catchError((err) => {
+        console.error(err.response.data);
+        return throwError(err);
+      }),
     );
 
     const total = balances.pipe(
