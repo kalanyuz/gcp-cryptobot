@@ -39,6 +39,7 @@ export class BitFlyerExchange extends ExchangeService {
     }
     const apiKeyName: string = configs.settings['api_keyname'];
     const secretKeyName: string = configs.settings['secret_keyname'];
+
     secretService
       .getSecret(apiKeyName)
       .then((key) => {
@@ -231,10 +232,10 @@ export class BitFlyerExchange extends ExchangeService {
     return response;
   }
 
-  clear(pair: string): Observable<any> {
+  clear(asset: string, denominator: string): Observable<any> {
     const path = '/v1/me/cancelallchildorders';
     const requestBody = JSON.stringify({
-      product_code: pair,
+      product_code: `${asset}_${denominator}`,
     });
     const signature = this.createSignature('POST', path, requestBody);
     const response = this.httpService.post(this.baseURL + path, requestBody, {
