@@ -1,5 +1,5 @@
 import { Body, Controller, Get } from '@nestjs/common';
-import { Observable, of } from 'rxjs';
+import { Observable } from 'rxjs';
 import { BotRequest } from './entities/exchange';
 import { ExchangeService } from './exchange.service';
 import { assertIsString } from '../utils/helper';
@@ -20,5 +20,12 @@ export class ExchangeController {
     assertIsString(botReq.asset);
     assertIsString(botReq.denominator);
     return this.service.buy(botReq.asset, botReq.denominator, botReq.amount);
+  }
+
+  @Get('clear')
+  clearOrders(@Body() botReq: BotRequest): Observable<any> {
+    assertIsString(botReq.asset);
+    assertIsString(botReq.denominator);
+    return this.service.clear(botReq.asset, botReq.denominator);
   }
 }
