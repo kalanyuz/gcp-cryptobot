@@ -9,9 +9,9 @@ export abstract class ExchangeService {
     protected secretService: SecretsService,
   ) {}
 
-  abstract getPrice(ofProduct: string, priceIn: string): Observable<any>;
+  abstract getPrice(ofProduct: string, priceIn: string): any;
 
-  abstract getBalance(priceIn: string): Observable<any>;
+  abstract getBalance(priceIn: string): any;
 
   abstract buy(
     asset: string,
@@ -21,4 +21,6 @@ export abstract class ExchangeService {
   ): any;
 
   abstract sell(asset: string, sellFor: string, amount?: number): any;
+
+  abstract clear(asset: string, denominator: string): any;
 }
