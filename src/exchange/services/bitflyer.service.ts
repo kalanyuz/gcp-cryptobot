@@ -18,6 +18,11 @@ import { ExchangeService } from '../exchange.service';
 import * as crypto from 'crypto';
 import { forkJoin } from 'rxjs';
 import { SecretsService } from '../../services/secrets/secrets.service';
+import {
+  BitFlyerAsset,
+  BitFlyerBalance,
+  BitFlyerSignature,
+} from './bitflyer.entities';
 
 @Injectable()
 export class BitFlyerExchange extends ExchangeService {
@@ -55,7 +60,11 @@ export class BitFlyerExchange extends ExchangeService {
       .catch((error) => console.error(error));
   }
 
-  private createSignature(method: string, path: string, body?: string): any {
+  private createSignature(
+    method: string,
+    path: string,
+    body?: string,
+  ): BitFlyerSignature {
     const timestamp = Date.now().toString();
     const bodyString = body ?? '';
     const text = timestamp + method + path + bodyString;
@@ -71,7 +80,7 @@ export class BitFlyerExchange extends ExchangeService {
     };
   }
 
-  getPrice(ofProduct: string, priceIn: string): Observable<any> {
+  getPrice(ofProduct: string, priceIn: string): Observable<BitFlyerAsset> {
     const path = '/v1/ticker';
     const response = this.httpService.get(`${this.baseURL}${path}`);
     const price = response.pipe(
@@ -106,20 +115,20 @@ export class BitFlyerExchange extends ExchangeService {
     return price;
   }
 
-  getBalance(priceIn: string): Observable<any> {
+  getBalance(priceIn: string): Observable<BitFlyerBalance> {
     const path = '/v1/me/getbalance';
     const signature = this.createSignature('GET', path);
     const response = this.httpService.get(`${this.baseURL}${path}`, {
       headers: signature,
     });
 
-    const balance = response.pipe(
+    const balances = response.pipe(
       mergeMap((x) => x.data),
       filter((x) => x['amount'] > 0),
-      toArray(),
+      toArray<BitFlyerAsset>(),
     );
 
-    const total = balance.pipe(
+    const total = balances.pipe(
       mergeMap((item) => item),
       concatMap((item) => {
         if (item['currency_code'] !== priceIn) {
@@ -130,7 +139,7 @@ export class BitFlyerExchange extends ExchangeService {
       }),
       reduce(
         (current, x) => {
-          current.amount += parseFloat(x['amount']);
+          current.amount += x.amount;
           return current;
         },
         {
@@ -141,7 +150,7 @@ export class BitFlyerExchange extends ExchangeService {
     );
 
     return forkJoin({
-      balance,
+      balances,
       total,
     });
   }
@@ -151,7 +160,7 @@ export class BitFlyerExchange extends ExchangeService {
     using: string,
     amount?: number,
     stopLoss?: number,
-  ): Promise<Observable<any>> {
+  ): Promise<any> {
     /* get balance, compute total asset, allocate */
     /* if amount is not specified, getBalance and check rebalancing configuration */
     if (amount === undefined) {
@@ -187,23 +196,22 @@ export class BitFlyerExchange extends ExchangeService {
       time_in_force: 'GTC',
     });
     const signature = this.createSignature('POST', path, requestBody);
-    const response = this.httpService.post(this.baseURL + path, requestBody, {
-      headers: signature,
-    });
+    const response = this.httpService
+      .post(this.baseURL + path, requestBody, {
+        headers: signature,
+      })
+      .toPromise();
+
     return response;
   }
 
-  async sell(
-    asset: string,
-    sellFor: string,
-    amount?: number,
-  ): Promise<Observable<any>> {
+  async sell(asset: string, sellFor: string, amount?: number): Promise<any> {
     // if amount is not specified, getBalance and sell all
     if (amount === undefined) {
       try {
         const myAsset = await this.getBalance(sellFor)
           .pipe(
-            mergeMap((x) => x.balance),
+            mergeMap((x) => x.balances),
             filter((x) => x['currency_code'] === asset),
           )
           .toPromise();
@@ -226,21 +234,26 @@ export class BitFlyerExchange extends ExchangeService {
       time_in_force: 'GTC',
     });
     const signature = this.createSignature('POST', path, requestBody);
-    const response = this.httpService.post(this.baseURL + path, requestBody, {
-      headers: signature,
-    });
+    const response = this.httpService
+      .post(this.baseURL + path, requestBody, {
+        headers: signature,
+      })
+      .toPromise();
+
     return response;
   }
 
-  clear(asset: string, denominator: string): Observable<any> {
+  clear(asset: string, denominator: string): Promise<any> {
     const path = '/v1/me/cancelallchildorders';
     const requestBody = JSON.stringify({
       product_code: `${asset}_${denominator}`,
     });
     const signature = this.createSignature('POST', path, requestBody);
-    const response = this.httpService.post(this.baseURL + path, requestBody, {
-      headers: signature,
-    });
+    const response = this.httpService
+      .post(this.baseURL + path, requestBody, {
+        headers: signature,
+      })
+      .toPromise();
 
     return response;
   }

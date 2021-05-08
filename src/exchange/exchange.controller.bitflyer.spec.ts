@@ -26,7 +26,7 @@ describe('ExchangeController', () => {
   };
 
   const allAsset = {
-    balance: [
+    balances: [
       { currency_code: 'JPY', amount: 42260, available: 17360 },
       { currency_code: 'BTC', amount: 0.02357742, available: 0.02357742 },
       { currency_code: 'ETH', amount: 0.039944, available: 0.039944 },
@@ -104,13 +104,8 @@ describe('ExchangeController', () => {
 
     expect(getBalance).toBeCalledWith('BTC');
     expect(buyService).toBeCalledWith('ETH', 'BTC', undefined);
-
-    response.subscribe({
-      next: (x) => {
-        expect(x).toEqual(orderResponse);
-      },
-      complete: () => done(),
-    });
+    expect(response).toEqual(orderResponse);
+    done();
   });
 
   it('Should buy correctly when amount is defined', async (done) => {
@@ -125,13 +120,8 @@ describe('ExchangeController', () => {
 
     expect(getBalance).not.toBeCalled();
     expect(buyService).toBeCalledWith('ETH', 'BTC', 2);
-
-    response.subscribe({
-      next: (x) => {
-        expect(x).toEqual(orderResponse);
-      },
-      complete: () => done(),
-    });
+    expect(response).toEqual(orderResponse);
+    done();
   });
 
   it('Should sell correctly when amount is undefined', async (done) => {
@@ -144,13 +134,8 @@ describe('ExchangeController', () => {
 
     expect(getBalance).toBeCalledWith('BTC');
     expect(sellService).toBeCalledWith('ETH', 'BTC', undefined);
-
-    response.subscribe({
-      next: (x) => {
-        expect(x).toEqual(orderResponse);
-      },
-      complete: () => done(),
-    });
+    expect(response).toEqual(orderResponse);
+    done();
   });
 
   it('Should sell correctly when amount is defined', async (done) => {
@@ -165,12 +150,7 @@ describe('ExchangeController', () => {
 
     expect(getBalance).not.toBeCalled();
     expect(sellService).toBeCalledWith('ETH', 'BTC', 2);
-
-    response.subscribe({
-      next: (x) => {
-        expect(x).toEqual(orderResponse);
-      },
-      complete: () => done(),
-    });
+    expect(response).toEqual(orderResponse);
+    done();
   });
 });
