@@ -25,4 +25,4 @@ import configuration from './services/configs/configurations';
   ],
   controllers: [ExchangeController],
 })
-export class AppModule {}
+export class BitFlyer {}

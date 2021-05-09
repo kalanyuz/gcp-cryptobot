@@ -1,13 +1,23 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
+import { BitFlyer } from './bitflyer.module';
 import { TradingViewGuard } from './guard/tradingview.guard';
 import 'source-map-support/register';
 
 const GUARDS = ['tradingview', 'none'].map((guard) => guard.toLowerCase());
+const EXCHANGES = ['tradingview'];
 const GUARD_ERROR = `Authorization guard not specified. Set GUARD env variable to one of: ${GUARDS.toString()}`;
+const EXCHANGE_ERROR = `Exchange not specified. Set EXCHANGE env variable to one of: ${EXCHANGES.toString()}`;
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  let module: any;
+  switch (process.env.EXCHANGE.toLowerCase()) {
+    case 'tradingview':
+      module = BitFlyer;
+      break;
+    default:
+      throw new Error(EXCHANGE_ERROR);
+  }
+  const app = await NestFactory.create(module);
   switch (process.env.GUARD.toLowerCase()) {
     case 'tradingview':
       app.useGlobalGuards(new TradingViewGuard());
@@ -18,5 +28,10 @@ async function bootstrap() {
       throw new Error(GUARD_ERROR);
   }
   await app.listen(process.env.PORT);
+  console.log('Bot is running');
+  console.log(`
+  exchange:${process.env.EXCHANGE}
+  guards: ${process.env.GUARD}
+  `);
 }
 bootstrap();
