@@ -15,4 +15,4 @@ services:
       - NODE_ENV=development
       - PORT=3001
       - GUARD=none
-      - EXCHANGE=tradingview
+      - EXCHANGE=bitflyer

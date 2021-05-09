@@ -4,14 +4,14 @@ import { TradingViewGuard } from './guard/tradingview.guard';
 import 'source-map-support/register';
 
 const GUARDS = ['tradingview', 'none'].map((guard) => guard.toLowerCase());
-const EXCHANGES = ['tradingview'];
+const EXCHANGES = ['bitflyer'];
 const GUARD_ERROR = `Authorization guard not specified. Set GUARD env variable to one of: ${GUARDS.toString()}`;
 const EXCHANGE_ERROR = `Exchange not specified. Set EXCHANGE env variable to one of: ${EXCHANGES.toString()}`;
 
 async function bootstrap() {
   let module: any;
   switch (process.env.EXCHANGE.toLowerCase()) {
-    case 'tradingview':
+    case 'bitflyer':
       module = BitFlyer;
       break;
     default:
