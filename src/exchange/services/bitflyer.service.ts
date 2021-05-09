@@ -113,7 +113,6 @@ export class BitFlyerExchange extends ExchangeService {
         }
       }),
       catchError((err) => {
-        console.error(err.response.data);
         return throwError(err);
       }),
     );

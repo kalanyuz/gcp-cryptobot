@@ -3,7 +3,6 @@ import { Observable, of } from 'rxjs';
 import { BotRequest } from './entities/exchange';
 import { ExchangeService } from './exchange.service';
 import { assertIsString } from '../utils/helper';
-import { TradingViewGuard } from '../guard/tradingview.guard';
 import { ExchangeInterceptor } from '../guard/exchange.interceptor';
 
 @Controller('exchange')
