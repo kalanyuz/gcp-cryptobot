@@ -1,4 +1,4 @@
-import { Body, Controller, Get, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Post, Get, UseInterceptors } from '@nestjs/common';
 import { Observable, of } from 'rxjs';
 import { BotRequest } from './entities/exchange';
 import { ExchangeService } from './exchange.service';
@@ -10,7 +10,7 @@ export class ExchangeController {
   constructor(private service: ExchangeService) {}
 
   @UseInterceptors(ExchangeInterceptor)
-  @Get('sell')
+  @Post('sell')
   async makeSellOrder(@Body() botReq: BotRequest): Promise<Observable<any>> {
     assertIsString(botReq.asset);
     assertIsString(botReq.denominator);
@@ -18,7 +18,7 @@ export class ExchangeController {
   }
 
   @UseInterceptors(ExchangeInterceptor)
-  @Get('buy')
+  @Post('buy')
   async makeBuyOrder(@Body() botReq: BotRequest): Promise<Observable<any>> {
     assertIsString(botReq.asset);
     assertIsString(botReq.denominator);
@@ -26,7 +26,7 @@ export class ExchangeController {
   }
 
   @UseInterceptors(ExchangeInterceptor)
-  @Get('clear')
+  @Post('clear')
   clearOrders(@Body() botReq: BotRequest): Observable<any> {
     assertIsString(botReq.asset);
     assertIsString(botReq.denominator);
