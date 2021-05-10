@@ -11,7 +11,7 @@ export class ExchangeController {
 
   @UseInterceptors(ExchangeInterceptor)
   @Post('sell')
-  async makeSellOrder(@Body() botReq: BotRequest): Promise<Observable<any>> {
+  async makeSellOrder(@Body() botReq: BotRequest): Promise<any> {
     assertIsString(botReq.asset);
     assertIsString(botReq.denominator);
     return this.service.sell(botReq.asset, botReq.denominator, botReq.amount);
@@ -19,7 +19,7 @@ export class ExchangeController {
 
   @UseInterceptors(ExchangeInterceptor)
   @Post('buy')
-  async makeBuyOrder(@Body() botReq: BotRequest): Promise<Observable<any>> {
+  async makeBuyOrder(@Body() botReq: BotRequest): Promise<any> {
     assertIsString(botReq.asset);
     assertIsString(botReq.denominator);
     return this.service.buy(botReq.asset, botReq.denominator, botReq.amount);
@@ -27,7 +27,7 @@ export class ExchangeController {
 
   @UseInterceptors(ExchangeInterceptor)
   @Post('clear')
-  clearOrders(@Body() botReq: BotRequest): Observable<any> {
+  clearOrders(@Body() botReq: BotRequest): Promise<any> {
     assertIsString(botReq.asset);
     assertIsString(botReq.denominator);
     return this.service.clear(botReq.asset, botReq.denominator);
