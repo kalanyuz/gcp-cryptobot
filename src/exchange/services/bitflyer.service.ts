@@ -208,13 +208,18 @@ export class BitFlyerExchange extends ExchangeService {
       .post(this.baseURL + path, requestBody, {
         headers: signature,
       })
+      .pipe(
+        catchError((err) => {
+          console.error(err.response.data);
+          return throwError(err);
+        }),
+      )
       .toPromise();
 
     return response;
   }
 
   async sell(asset: string, sellFor: string, amount?: number): Promise<any> {
-    // if amount is not specified, getBalance and sell all
     if (amount === undefined) {
       try {
         const myAsset = await this.getBalance(sellFor)
@@ -246,6 +251,12 @@ export class BitFlyerExchange extends ExchangeService {
       .post(this.baseURL + path, requestBody, {
         headers: signature,
       })
+      .pipe(
+        catchError((err) => {
+          console.error(err.response.data);
+          return throwError(err);
+        }),
+      )
       .toPromise();
 
     return response;
@@ -261,6 +272,12 @@ export class BitFlyerExchange extends ExchangeService {
       .post(this.baseURL + path, requestBody, {
         headers: signature,
       })
+      .pipe(
+        catchError((err) => {
+          console.error(err.response.data);
+          return throwError(err);
+        }),
+      )
       .toPromise();
 
     return response;
