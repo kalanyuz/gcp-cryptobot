@@ -83,7 +83,9 @@ export class BitFlyerExchange extends ExchangeService {
 
   getPrice(ofProduct: string, priceIn: string): Observable<BitFlyerAsset> {
     const path = '/v1/ticker';
-    const response = this.httpService.get(`${this.baseURL}${path}`);
+    const response = this.httpService.get(
+      `${this.baseURL}${path}?product_code=${ofProduct}_${priceIn}`,
+    );
     const price = response.pipe(
       map((x) => x.data),
       map((x) => {
