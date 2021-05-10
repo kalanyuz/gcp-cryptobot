@@ -12,25 +12,36 @@ export class ExchangeController {
   @UseInterceptors(ExchangeInterceptor)
   @Post('sell')
   async makeSellOrder(@Body() botReq: BotRequest): Promise<any> {
+    console.log(botReq);
     assertIsString(botReq.asset);
     assertIsString(botReq.denominator);
-    return this.service.sell(botReq.asset, botReq.denominator, botReq.amount);
+    return this.service.sell(
+      botReq.asset.trim(),
+      botReq.denominator.trim(),
+      botReq.amount,
+    );
   }
 
   @UseInterceptors(ExchangeInterceptor)
   @Post('buy')
   async makeBuyOrder(@Body() botReq: BotRequest): Promise<any> {
+    console.log(botReq);
     assertIsString(botReq.asset);
     assertIsString(botReq.denominator);
-    return this.service.buy(botReq.asset, botReq.denominator, botReq.amount);
+    return this.service.buy(
+      botReq.asset.trim(),
+      botReq.denominator.trim(),
+      botReq.amount,
+    );
   }
 
   @UseInterceptors(ExchangeInterceptor)
   @Post('clear')
   clearOrders(@Body() botReq: BotRequest): Promise<any> {
+    console.log(botReq);
     assertIsString(botReq.asset);
     assertIsString(botReq.denominator);
-    return this.service.clear(botReq.asset, botReq.denominator);
+    return this.service.clear(botReq.asset.trim(), botReq.denominator.trim());
   }
 
   @Get('health')
