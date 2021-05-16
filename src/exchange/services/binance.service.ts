@@ -194,17 +194,12 @@ export class BinanceExchange extends ExchangeService {
       }
     }
 
-    const path = '/v1/me/sendchildorder';
-    const requestBody = JSON.stringify({
-      product_code: `${asset}_${using}`,
-      child_order_type: 'MARKET',
-      side: 'BUY',
-      size: amount,
-      time_in_force: 'GTC',
-    });
-    const signature = this.createSignature('');
+    const path = '/api/v3/order?';
+    const timestamp = new Date().getTime().toString();
+    const query = `symbol=${asset}${using}&side=BUY&type=MARKET&quantity=${amount}&newOrderRespType=FULL&timestamp=${timestamp}`;
+    const signature = this.createSignature(query);
     const response = this.httpService
-      .post(this.baseURL + path, requestBody, {
+      .post(`${this.baseURL}${path}${query}&signature=${signature}`, null, {
         headers: this.key,
       })
       .pipe(
@@ -237,17 +232,12 @@ export class BinanceExchange extends ExchangeService {
       }
     }
 
-    const path = '/v1/me/sendchildorder';
-    const requestBody = JSON.stringify({
-      product_code: `${asset}_${sellFor}`,
-      child_order_type: 'MARKET',
-      side: 'SELL',
-      size: amount,
-      time_in_force: 'GTC',
-    });
-    const signature = this.createSignature('');
+    const path = '/api/v3/order?';
+    const timestamp = new Date().getTime().toString();
+    const query = `symbol=${asset}${sellFor}&side=BUY&type=MARKET&quantity=${amount}&newOrderRespType=FULL&timestamp=${timestamp}`;
+    const signature = this.createSignature(query);
     const response = this.httpService
-      .post(this.baseURL + path, requestBody, {
+      .post(`${this.baseURL}${path}${query}&signature=${signature}`, null, {
         headers: this.key,
       })
       .pipe(
