@@ -17,6 +17,7 @@ async function bootstrap() {
       break;
     case 'binance':
       module = Binance;
+      break;
     default:
       throw new Error(EXCHANGE_ERROR);
   }
