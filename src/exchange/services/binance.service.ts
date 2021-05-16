@@ -19,11 +19,7 @@ import { ExchangeService } from '../exchange.service';
 import * as crypto from 'crypto';
 import { forkJoin } from 'rxjs';
 import { SecretsService } from '../../services/secrets/secrets.service';
-import {
-  BitFlyerAsset,
-  BitFlyerBalance,
-  BitFlyerSignature,
-} from './bitflyer.entities';
+import { Asset, Balance } from '../entities/exchange';
 
 @Injectable()
 export class BinanceExchange extends ExchangeService {
@@ -37,12 +33,6 @@ export class BinanceExchange extends ExchangeService {
     secretService: SecretsService,
   ) {
     super(httpService, secretService);
-    if (configs.tradeCurrency !== 'JPY') {
-      throw new HttpException(
-        'BitFlyer module currently supports only JPY based trading pairs',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
     const apiKeyName: string = configs.settings['api_keyname'];
     const secretKeyName: string = configs.settings['secret_keyname'];
 
@@ -70,7 +60,7 @@ export class BinanceExchange extends ExchangeService {
     return signature;
   }
 
-  getPrice(ofProduct: string, priceIn: string): Observable<any> {
+  getPrice(ofProduct: string, priceIn: string): Observable<Asset> {
     const path = '/api/v3/ticker/price?';
     const response = this.httpService.get(
       `${this.baseURL}${path}?symbol=${ofProduct}${priceIn}`,
@@ -109,7 +99,7 @@ export class BinanceExchange extends ExchangeService {
     return price;
   }
 
-  getBalance(priceIn: string): Observable<any> {
+  getBalance(priceIn: string): Observable<Balance> {
     const path = '/api/v3/account?';
     const query = `timestamp=${new Date().getTime().toString()}`;
     const signature = this.createSignature(query);
@@ -128,7 +118,7 @@ export class BinanceExchange extends ExchangeService {
         available: parseFloat(x['free']),
       })),
       filter((x) => x['amount'] > 0),
-      toArray<any>(),
+      toArray<Asset>(),
       catchError((err) => {
         console.error(err.response.data);
         return throwError(err);
