@@ -48,7 +48,7 @@ describe('ExchangeService', () => {
 
   const allAsset = {
     balances: [
-      { currency_code: 'JPY', amount: 42260, available: 17360 },
+      { currency_code: 'USDT', amount: 42260, available: 17360 },
       { currency_code: 'BTC', amount: 0.02357742, available: 0.02357742 },
       { currency_code: 'ETH', amount: 0.039944, available: 0.039944 },
     ],
