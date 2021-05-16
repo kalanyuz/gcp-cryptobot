@@ -13,7 +13,7 @@
     "start:dev": "nest start --debug 0.0.0.0:9229 --watch",
     "start": "node --unhandled-rejections=strict dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
-    "test": "jest --detectOpenHandles",
+    "test": "jest --detectOpenHandles --silent",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
