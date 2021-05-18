@@ -606,10 +606,10 @@
     webpack "5.28.0"
     webpack-node-externals "2.5.2"
 
-"@nestjs/common@^7.6.16":
-  version "7.6.16"
-  resolved "https://registry.yarnpkg.com/@nestjs/common/-/common-7.6.16.tgz#a63a9b295f22057e15ba5ec8d831403d5b68eb3b"
-  integrity sha512-DE0NduLgkVB5vz058s8QwM6lpZkQCE1kNb5mNZNIn62JZAVyKVUmkwzDhd4nlgYko9IkIFLucIs2Utth8UYxKg==
+"@nestjs/common@^7.6.17":
+  version "7.6.17"
+  resolved "https://registry.yarnpkg.com/@nestjs/common/-/common-7.6.17.tgz#623c7f93117bea15fff07a6b63fcd644a8764655"
+  integrity sha512-RHvD32FxfV7yDWX9GPmn0ZSv7ka5kLeVamU5ZpoXSTUjkGqWFt3MTyIP+HUQD2778kDqT+CgEtVJ1fxDG5Oh9g==
   dependencies:
     axios "0.21.1"
     iterare "1.2.1"
