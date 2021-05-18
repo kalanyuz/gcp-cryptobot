@@ -119,7 +119,7 @@ describe('ExchangeController', () => {
     jest.spyOn(httpClient, 'post').mockReturnValueOnce(of(orderResponse));
     const getBalance = jest
       .spyOn(service, 'getBalance')
-      .mockReturnValueOnce(of(allAsset));
+      .mockResolvedValueOnce(of(allAsset));
     const buyService = jest.spyOn(service, 'buy');
     const response = await controller.makeBuyOrder(botReq);
 
@@ -133,7 +133,7 @@ describe('ExchangeController', () => {
     jest.spyOn(httpClient, 'post').mockReturnValueOnce(of(orderResponse));
     const getBalance = jest
       .spyOn(service, 'getBalance')
-      .mockReturnValueOnce(of(allAsset));
+      .mockResolvedValueOnce(of(allAsset));
     const buyService = jest.spyOn(service, 'buy');
     let botRegWithAmount = Object.assign({}, botReq);
     botRegWithAmount.amount = 2;
@@ -149,7 +149,7 @@ describe('ExchangeController', () => {
     jest.spyOn(httpClient, 'post').mockReturnValueOnce(of(orderResponse));
     const getBalance = jest
       .spyOn(service, 'getBalance')
-      .mockReturnValueOnce(of(allAsset));
+      .mockResolvedValueOnce(of(allAsset));
     const sellService = jest.spyOn(service, 'sell');
     const response = await controller.makeSellOrder(botReq);
 
@@ -163,7 +163,7 @@ describe('ExchangeController', () => {
     jest.spyOn(httpClient, 'post').mockReturnValueOnce(of(orderResponse));
     const getBalance = jest
       .spyOn(service, 'getBalance')
-      .mockReturnValueOnce(of(allAsset));
+      .mockResolvedValueOnce(of(allAsset));
     const sellService = jest.spyOn(service, 'sell');
     let botRegWithAmount = Object.assign({}, botReq);
     botRegWithAmount.amount = 2;

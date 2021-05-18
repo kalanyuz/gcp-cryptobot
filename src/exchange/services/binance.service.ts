@@ -14,17 +14,27 @@ import {
   catchError,
 } from 'rxjs/operators';
 import { BotConfigService } from '../../services/configs/botconfigs.service';
-import { config, Observable, of, throwError } from 'rxjs';
+import { from, Observable, of, throwError } from 'rxjs';
 import { ExchangeService } from '../exchange.service';
 import * as crypto from 'crypto';
 import { forkJoin } from 'rxjs';
 import { SecretsService } from '../../services/secrets/secrets.service';
 import { Asset, Balance } from '../entities/exchange';
 
+/**
+ * Notes about using binance testnet.
+ * Binance testnet does not contain the same asset pairs.
+ * as listed in the production version.
+ * Please test that the asset pairs you'd like to trade exists.
+ * Otherwise, autorebalance on buy will not work.
+ */
 @Injectable()
 export class BinanceExchange extends ExchangeService {
   baseURL: string = 'https://testnet.binance.vision';
-  key = { 'X-MBX-APIKEY': '' };
+  key = {
+    'Content-Type': 'application/json',
+    'X-MBX-APIKEY': '',
+  };
   secret: string = '';
 
   constructor(
@@ -60,10 +70,24 @@ export class BinanceExchange extends ExchangeService {
     return signature;
   }
 
+  getTime(): Promise<number> {
+    const path = '/api/v3/time';
+    const response = this.httpService.get(`${this.baseURL}${path}`);
+    const time = response.pipe(
+      map((x) => x.data.serverTime),
+      catchError((err) => {
+        console.error('failed to get server time.');
+        return throwError(err);
+      }),
+    );
+    return time.toPromise();
+  }
+
   getPrice(ofProduct: string, priceIn: string): Observable<Asset> {
+    /* TODO: You can't get a price of stable coin */
     const path = '/api/v3/ticker/price?';
     const response = this.httpService.get(
-      `${this.baseURL}${path}?symbol=${ofProduct}${priceIn}`,
+      `${this.baseURL}${path}symbol=${ofProduct}${priceIn}`,
     );
     const price = response.pipe(
       map((x) => x.data),
@@ -85,7 +109,8 @@ export class BinanceExchange extends ExchangeService {
             amount: price,
             currency_code: priceIn,
           };
-        } catch {
+        } catch (err) {
+          console.error(err);
           throw new HttpException(
             'Failed to get price info',
             HttpStatus.BAD_REQUEST,
@@ -99,9 +124,9 @@ export class BinanceExchange extends ExchangeService {
     return price;
   }
 
-  getBalance(priceIn: string): Observable<Balance> {
+  async getBalance(priceIn: string): Promise<Observable<Balance>> {
     const path = '/api/v3/account?';
-    const query = `timestamp=${new Date().getTime().toString()}`;
+    const query = `timestamp=${await this.getTime()}`;
     const signature = this.createSignature(query);
     const response = this.httpService.get(
       `${this.baseURL}${path}${query}&signature=${signature}`,
@@ -162,13 +187,12 @@ export class BinanceExchange extends ExchangeService {
     /* if amount is not specified, getBalance and check rebalancing configuration */
     if (amount === undefined) {
       try {
-        const myAsset = await this.getBalance(using)
+        const myAsset = await from(await this.getBalance(using))
           .pipe(
             map((x) => x.total),
             filter((x) => x.currency_code === using),
           )
           .toPromise();
-
         amount = myAsset['amount'];
         const ratio =
           this.configs.rebalanceProfiles
@@ -185,7 +209,7 @@ export class BinanceExchange extends ExchangeService {
     }
 
     const path = '/api/v3/order?';
-    const timestamp = new Date().getTime().toString();
+    const timestamp = await this.getTime();
     const query = `symbol=${asset}${using}&side=BUY&type=MARKET&quantity=${amount}&newOrderRespType=FULL&timestamp=${timestamp}`;
     const signature = this.createSignature(query);
     const response = this.httpService
@@ -206,7 +230,7 @@ export class BinanceExchange extends ExchangeService {
   async sell(asset: string, sellFor: string, amount?: number): Promise<any> {
     if (amount === undefined) {
       try {
-        const myAsset = await this.getBalance(sellFor)
+        const myAsset = await from(await this.getBalance(sellFor))
           .pipe(
             mergeMap((x) => x.balances),
             filter((x) => x['currency_code'] === asset),
