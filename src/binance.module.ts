@@ -2,10 +2,10 @@ import { HttpModule, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ExchangeController } from './exchange/exchange.controller';
 import { ExchangeService } from './exchange/exchange.service';
-import { BitFlyerExchange } from './exchange/services/bitflyer.service';
 import { BotConfigService } from './services/configs/botconfigs.service';
 import { SecretsService } from './services/secrets/secrets.service';
 import configuration from './services/configs/configurations';
+import { BinanceExchange } from './exchange/services/binance.service';
 
 @Module({
   imports: [
@@ -18,11 +18,11 @@ import configuration from './services/configs/configurations';
   providers: [
     {
       provide: ExchangeService,
-      useClass: BitFlyerExchange,
+      useClass: BinanceExchange,
     },
     BotConfigService,
     SecretsService,
   ],
   controllers: [ExchangeController],
 })
-export class BitFlyer {}
+export class Binance {}

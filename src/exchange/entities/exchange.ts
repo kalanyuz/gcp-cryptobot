@@ -15,3 +15,14 @@ export interface BotRequest {
   // Time of alert (aka. {{time}} in TradingView)
   time?: string | undefined;
 }
+
+export interface Asset {
+  amount: number;
+  currency_code: string;
+  available?: number;
+}
+
+export interface Balance {
+  balances: Asset[];
+  total: Asset;
+}
