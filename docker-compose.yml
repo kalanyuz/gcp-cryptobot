@@ -16,4 +16,4 @@ services:
       - PORT=3001
       - GUARD=none
       - EXCHANGE=binance
-      - CONFIGFILE=config.yaml
+      - CONFIGFILE=config.binance.sample.yaml
