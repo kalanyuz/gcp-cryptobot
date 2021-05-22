@@ -5,14 +5,10 @@ configurations:
   rebalance:
     - 'BTC:40'
     - 'ETH:35'
-    - 'LINK:10'
-    - 'ADA:5'
-    - 'MANA:5'
-    - 'CURVE:5'
+    - 'LINK:15'
+    - 'ADA:10'
   trading_pairs:
     - 'BTC:USDT'
     - 'ETH:BTC'
     - 'LINK:BTC'
     - 'ADA:BTC'
-    - 'MANA:BTC'
-    - 'CURVE:BTC'
