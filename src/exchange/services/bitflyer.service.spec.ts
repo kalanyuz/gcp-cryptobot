@@ -74,6 +74,7 @@ describe('ExchangeService', () => {
   };
 
   beforeEach(async () => {
+    process.env.CONFIGFILE = 'config.bitflyer.sample.yaml';
     secrets = {
       getSecret: jest.fn().mockResolvedValue('huh?'),
     };

@@ -149,6 +149,7 @@ describe('ExchangeService', () => {
   };
 
   beforeEach(async () => {
+    process.env.CONFIGFILE = 'config.binance.sample.yaml';
     secrets = {
       getSecret: jest.fn().mockResolvedValue('huh?'),
     };

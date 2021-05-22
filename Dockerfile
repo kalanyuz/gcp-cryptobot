@@ -1,8 +1,8 @@
-FROM node:12 AS development
+FROM node:14 AS development
 RUN npm install -g @nestjs/cli@7
 WORKDIR /usr/src/app
 
-FROM node:12-slim AS production
+FROM node:14-slim AS production
 RUN npm install -g @nestjs/cli@7
 WORKDIR /usr/src/app
 # Copy application dependency manifests to the container image.

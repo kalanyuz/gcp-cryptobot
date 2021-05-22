@@ -30,7 +30,7 @@ import { Asset, Balance } from '../entities/exchange';
  */
 @Injectable()
 export class BinanceExchange extends ExchangeService {
-  baseURL: string = 'https://testnet.binance.vision';
+  baseURL: string = 'https://api.binance.com';
   key = {
     'Content-Type': 'application/json',
     'X-MBX-APIKEY': '',
