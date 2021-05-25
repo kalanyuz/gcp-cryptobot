@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@nestjs/common": "^7.6.17",
-    "@google-cloud/secret-manager": "^3.6.1",
+    "@google-cloud/secret-manager": "^3.7.0",
     "@nestjs/config": "^0.6.3",
     "@nestjs/core": "^7.6.17",
     "@nestjs/platform-express": "^7.6.17",
