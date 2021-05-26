@@ -289,4 +289,7 @@ export class BinanceExchange extends ExchangeService {
 
     return response;
   }
+
+  // TODO: implement
+  bidDips: undefined;
 }

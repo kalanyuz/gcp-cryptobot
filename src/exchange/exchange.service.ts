@@ -24,7 +24,7 @@ export abstract class ExchangeService {
 
   abstract sell(asset: string, sellFor: string, amount?: number): any;
 
-  abstract bidDips(asset: string, using: string, dipConfig: Dip[]): any;
+  abstract bidDips?(asset: string, using: string, dipConfig: Dip[]): any;
 
   abstract clear(asset: string, denominator: string): any;
 }
