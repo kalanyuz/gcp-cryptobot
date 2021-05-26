@@ -11,6 +11,7 @@ import { ConfigModule } from '@nestjs/config';
 import configuration from '../../services/configs/configurations';
 import { BotConfigService } from '../../services/configs/botconfigs.service';
 import { SecretsService } from '../../services/secrets/secrets.service';
+import { OrderType } from '../entities/exchange';
 
 describe('ExchangeService', () => {
   let service: BitFlyerExchange;
@@ -236,7 +237,7 @@ describe('ExchangeService', () => {
       .mockReturnValue(of(allAsset));
 
     jest.spyOn(httpClient, 'post').mockReturnValueOnce(of(orderResponse));
-    const result = await service.buy('ETH', 'BTC');
+    const result = await service.buy('ETH', 'BTC', OrderType.Market);
 
     expect(result).toEqual(orderResponse);
     expect(getBalance).toBeCalledWith('BTC');
@@ -250,7 +251,7 @@ describe('ExchangeService', () => {
       .mockReturnValue(of('' as any));
 
     jest.spyOn(httpClient, 'post').mockReturnValueOnce(of(orderResponse));
-    const result = await service.buy('DOGE', 'BTC', 0.01);
+    const result = await service.buy('DOGE', 'BTC', OrderType.Market, 0.01);
 
     expect(result).toEqual(orderResponse);
     expect(getBalance).not.toBeCalled();
@@ -263,7 +264,7 @@ describe('ExchangeService', () => {
       .mockReturnValue(of(allAsset));
 
     jest.spyOn(httpClient, 'post').mockReturnValueOnce(of(orderResponse));
-    const result = service.buy('BTC', 'DOGE');
+    const result = service.buy('BTC', 'DOGE', OrderType.Market);
 
     expect(result).rejects.toThrow(
       new HttpException(
@@ -281,7 +282,7 @@ describe('ExchangeService', () => {
     const buyRequest = jest
       .spyOn(httpClient, 'post')
       .mockReturnValueOnce(of(orderResponse));
-    const result = await service.buy('ETH', 'BTC');
+    const result = await service.buy('ETH', 'BTC', OrderType.Market);
 
     expect(result).toEqual(orderResponse);
 
@@ -296,6 +297,46 @@ describe('ExchangeService', () => {
       }),
       expect.anything(),
     );
+    done();
+  });
+
+  it('should buy the dip', async (done) => {
+    jest.spyOn(service, 'getPrice').mockReturnValue(
+      of({
+        amount: 50000,
+        currency_code: 'JPY',
+      }),
+    );
+    jest.spyOn(service, 'getBalance').mockReturnValue(of(allAsset));
+    const buyLimit = jest.spyOn(service, 'buy');
+    jest.spyOn(httpClient, 'post').mockReturnValue(of(orderResponse));
+    const dipBought = await service.bidDips('BTC', 'JPY', [
+      {
+        percent: 10,
+        allocation: 10,
+      },
+      {
+        percent: 20,
+        allocation: 20,
+      },
+      {
+        percent: 30,
+        allocation: 40,
+      },
+    ]);
+
+    expect(buyLimit).toBeCalledTimes(3);
+    expect(buyLimit.mock.calls.map((item) => item[3])).toEqual([
+      17360 * 0.1,
+      17360 * 0.2,
+      17360 * 0.4,
+    ]);
+    expect(buyLimit.mock.calls.map((item) => item[4])).toEqual([
+      50000 * 0.9,
+      50000 * 0.8,
+      50000 * 0.7,
+    ]);
+    expect(dipBought).toEqual({ status: 200, data: 'OK' });
     done();
   });
 });

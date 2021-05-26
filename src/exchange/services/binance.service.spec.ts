@@ -11,6 +11,7 @@ import configuration from '../../services/configs/configurations';
 import { BotConfigService } from '../../services/configs/botconfigs.service';
 import { SecretsService } from '../../services/secrets/secrets.service';
 import { BinanceExchange } from './binance.service';
+import { OrderType } from '../entities/exchange';
 
 describe('ExchangeService', () => {
   let service: BinanceExchange;
@@ -321,7 +322,7 @@ describe('ExchangeService', () => {
       .mockResolvedValueOnce(of(allAsset));
 
     jest.spyOn(httpClient, 'post').mockReturnValueOnce(of(orderResponse));
-    const result = await service.buy('DOGE', 'BTC', 0.01);
+    const result = await service.buy('DOGE', 'BTC', OrderType.Market, 0.01);
 
     expect(result).toEqual(orderResponse);
     expect(getBalance).not.toBeCalled();

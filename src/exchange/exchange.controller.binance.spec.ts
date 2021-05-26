@@ -7,7 +7,7 @@ import configuration from '../services/configs/configurations';
 import { BotConfigService } from '../services/configs/botconfigs.service';
 import { SecretsService } from '../services/secrets/secrets.service';
 import { of } from 'rxjs';
-import { BotRequest } from './entities/exchange';
+import { BotRequest, OrderType } from './entities/exchange';
 import { BinanceExchange } from './services/binance.service';
 
 describe('ExchangeController', () => {
@@ -125,7 +125,12 @@ describe('ExchangeController', () => {
     const response = await controller.makeBuyOrder(botReq);
 
     expect(getBalance).toBeCalledWith('BTC');
-    expect(buyService).toBeCalledWith('ETH', 'BTC', undefined);
+    expect(buyService).toBeCalledWith(
+      'ETH',
+      'BTC',
+      OrderType.Market,
+      undefined,
+    );
     expect(response).toEqual(orderResponse);
     done();
   });
@@ -141,7 +146,7 @@ describe('ExchangeController', () => {
     const response = await controller.makeBuyOrder(botRegWithAmount);
 
     expect(getBalance).not.toBeCalled();
-    expect(buyService).toBeCalledWith('ETH', 'BTC', 2);
+    expect(buyService).toBeCalledWith('ETH', 'BTC', OrderType.Market, 2);
     expect(response).toEqual(orderResponse);
     done();
   });
