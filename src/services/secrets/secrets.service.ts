@@ -16,5 +16,4 @@ export class SecretsService {
     // @ts-ignore
     return accessResponse.payload.data.toString('utf8');
   }
-  j;
 }

@@ -14,6 +14,9 @@ export interface BotRequest {
   price?: number | undefined;
   // Time of alert (aka. {{time}} in TradingView)
   time?: string | undefined;
+  // Dip buying configuration in terms of
+  // Y % buying power allocate to X % drop in price
+  dip?: Dip[] | undefined;
 }
 
 export interface Asset {
@@ -25,4 +28,14 @@ export interface Asset {
 export interface Balance {
   balances: Asset[];
   total: Asset;
+}
+
+export interface Dip {
+  percent: number;
+  allocation: number;
+}
+
+export enum OrderType {
+  Market = 'MARKET',
+  Limit = 'LIMIT',
 }

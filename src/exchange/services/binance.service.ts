@@ -19,7 +19,7 @@ import { ExchangeService } from '../exchange.service';
 import * as crypto from 'crypto';
 import { forkJoin } from 'rxjs';
 import { SecretsService } from '../../services/secrets/secrets.service';
-import { Asset, Balance } from '../entities/exchange';
+import { Asset, Balance, OrderType } from '../entities/exchange';
 
 /**
  * Notes about using binance testnet.
@@ -180,8 +180,9 @@ export class BinanceExchange extends ExchangeService {
   async buy(
     asset: string,
     using: string,
+    mode: OrderType = OrderType.Market,
     amount?: number,
-    stopLoss?: number,
+    price?: number,
   ): Promise<any> {
     /* get balance, compute total asset, allocate */
     /* if amount is not specified, getBalance and check rebalancing configuration */
@@ -210,7 +211,10 @@ export class BinanceExchange extends ExchangeService {
 
     const path = '/api/v3/order?';
     const timestamp = await this.getTime();
-    const query = `symbol=${asset}${using}&side=BUY&type=MARKET&quantity=${amount}&newOrderRespType=FULL&timestamp=${timestamp}`;
+    let query = `symbol=${asset}${using}&side=BUY&type=${mode}&quantity=${amount}&newOrderRespType=FULL&timestamp=${timestamp}`;
+    if (mode === OrderType.Limit) {
+      query = `${query}&price=${price}&timeInForce=GTC`;
+    }
     const signature = this.createSignature(query);
     const response = this.httpService
       .post(`${this.baseURL}${path}${query}&signature=${signature}`, null, {
@@ -285,4 +289,7 @@ export class BinanceExchange extends ExchangeService {
 
     return response;
   }
+
+  // TODO: implement
+  bidDips: undefined;
 }

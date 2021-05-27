@@ -24,7 +24,7 @@ import {
   BitFlyerBalance,
   BitFlyerSignature,
 } from './bitflyer.entities';
-
+import { Dip, OrderType } from '../entities/exchange';
 @Injectable()
 export class BitFlyerExchange extends ExchangeService {
   baseURL: string = 'https://api.bitflyer.com';
@@ -73,11 +73,11 @@ export class BitFlyerExchange extends ExchangeService {
       .createHmac('sha256', this.secret)
       .update(text)
       .digest('hex');
-
     return {
       'ACCESS-KEY': this.key,
       'ACCESS-TIMESTAMP': timestamp,
       'ACCESS-SIGN': signature,
+      'Content-Type': 'application/json',
     };
   }
 
@@ -168,8 +168,9 @@ export class BitFlyerExchange extends ExchangeService {
   async buy(
     asset: string,
     using: string,
+    mode: OrderType = OrderType.Market,
     amount?: number,
-    stopLoss?: number,
+    price?: number,
   ): Promise<any> {
     /* get balance, compute total asset, allocate */
     /* if amount is not specified, getBalance and check rebalancing configuration */
@@ -198,19 +199,24 @@ export class BitFlyerExchange extends ExchangeService {
     }
 
     const path = '/v1/me/sendchildorder';
-    const requestBody = JSON.stringify({
+    let requestBody = {
       product_code: `${asset}_${using}`,
-      child_order_type: 'MARKET',
+      child_order_type: mode,
       side: 'BUY',
       size: amount,
       time_in_force: 'GTC',
-    });
-    const signature = this.createSignature('POST', path, requestBody);
+    };
+    if (mode === OrderType.Limit) {
+      requestBody = Object.assign({ price }, requestBody);
+    }
+    const requestBodyString = JSON.stringify(requestBody);
+    const signature = this.createSignature('POST', path, requestBodyString);
     const response = this.httpService
-      .post(this.baseURL + path, requestBody, {
+      .post(this.baseURL + path, requestBodyString, {
         headers: signature,
       })
       .pipe(
+        map((item) => item.data),
         catchError((err) => {
           console.error(err.response.data);
           return throwError(err);
@@ -254,6 +260,7 @@ export class BitFlyerExchange extends ExchangeService {
         headers: signature,
       })
       .pipe(
+        map((item) => item.data),
         catchError((err) => {
           console.error(err.response.data);
           return throwError(err);
@@ -275,6 +282,7 @@ export class BitFlyerExchange extends ExchangeService {
         headers: signature,
       })
       .pipe(
+        map((item) => item.data),
         catchError((err) => {
           console.error(err.response.data);
           return throwError(err);
@@ -283,5 +291,31 @@ export class BitFlyerExchange extends ExchangeService {
       .toPromise();
 
     return response;
+  }
+
+  async bidDips(asset: string, using: string, dipConfig: Dip[]): Promise<any> {
+    try {
+      await this.clear(asset, using);
+      const myAsset = await this.getBalance(using).toPromise();
+      const assetPrice = await this.getPrice(asset, using).toPromise();
+      const buyingAsset = myAsset.balances.filter(
+        (item) => item.currency_code === using,
+      )[0];
+      await Promise.all(
+        dipConfig.map(async (dip) => {
+          const funds = buyingAsset.available * (dip.allocation / 100);
+          const price = Math.floor(assetPrice.amount * (1 - dip.percent / 100));
+          const unit = parseFloat((funds / price).toPrecision(4));
+          return this.buy(asset, using, OrderType.Limit, unit, price);
+        }),
+      );
+      return { status: 200, data: 'OK' };
+    } catch (err) {
+      await this.clear(asset, using);
+      throw new HttpException(
+        'Dip bids failed.',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }

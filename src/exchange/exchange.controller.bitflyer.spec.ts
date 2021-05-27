@@ -8,7 +8,7 @@ import configuration from '../services/configs/configurations';
 import { BotConfigService } from '../services/configs/botconfigs.service';
 import { SecretsService } from '../services/secrets/secrets.service';
 import { of } from 'rxjs';
-import { BotRequest } from './entities/exchange';
+import { BotRequest, OrderType } from './entities/exchange';
 
 describe('ExchangeController', () => {
   let controller: ExchangeController;
@@ -23,6 +23,25 @@ describe('ExchangeController', () => {
     amount: undefined,
     price: undefined,
     time: undefined,
+  };
+
+  const dipReq: BotRequest = {
+    asset: 'BTC',
+    denominator: 'JPY',
+    dip: [
+      {
+        percent: 10,
+        allocation: 10,
+      },
+      {
+        percent: 20,
+        allocation: 20,
+      },
+      {
+        percent: 30,
+        allocation: 40,
+      },
+    ],
   };
 
   const allAsset = {
@@ -104,8 +123,13 @@ describe('ExchangeController', () => {
     const response = await controller.makeBuyOrder(botReq);
 
     expect(getBalance).toBeCalledWith('BTC');
-    expect(buyService).toBeCalledWith('ETH', 'BTC', undefined);
-    expect(response).toEqual(orderResponse);
+    expect(buyService).toBeCalledWith(
+      'ETH',
+      'BTC',
+      OrderType.Market,
+      undefined,
+    );
+    expect(response).toEqual(orderResponse.data);
     done();
   });
 
@@ -120,8 +144,8 @@ describe('ExchangeController', () => {
     const response = await controller.makeBuyOrder(botRegWithAmount);
 
     expect(getBalance).not.toBeCalled();
-    expect(buyService).toBeCalledWith('ETH', 'BTC', 2);
-    expect(response).toEqual(orderResponse);
+    expect(buyService).toBeCalledWith('ETH', 'BTC', OrderType.Market, 2);
+    expect(response).toEqual(orderResponse.data);
     done();
   });
 
@@ -135,7 +159,7 @@ describe('ExchangeController', () => {
 
     expect(getBalance).toBeCalledWith('BTC');
     expect(sellService).toBeCalledWith('ETH', 'BTC', undefined);
-    expect(response).toEqual(orderResponse);
+    expect(response).toEqual(orderResponse.data);
     done();
   });
 
@@ -151,7 +175,62 @@ describe('ExchangeController', () => {
 
     expect(getBalance).not.toBeCalled();
     expect(sellService).toBeCalledWith('ETH', 'BTC', 2);
-    expect(response).toEqual(orderResponse);
+    expect(response).toEqual(orderResponse.data);
+    done();
+  });
+
+  it('Should buy the dip', async (done) => {
+    jest.spyOn(httpClient, 'post').mockReturnValue(of(orderResponse));
+    const getBalance = jest
+      .spyOn(service, 'getBalance')
+      .mockReturnValueOnce(of(allAsset));
+    jest.spyOn(service, 'getPrice').mockReturnValue(
+      of({
+        amount: 50000,
+        currency_code: 'JPY',
+      }),
+    );
+    const buyService = jest.spyOn(service, 'bidDips');
+    const clearOrders = jest.spyOn(service, 'clear');
+    const response = await controller.makeBuyDipOrders(dipReq);
+
+    expect(getBalance).toBeCalled();
+    expect(clearOrders).toBeCalledTimes(1);
+    expect(buyService).toBeCalledWith(
+      dipReq.asset,
+      dipReq.denominator,
+      dipReq.dip,
+    );
+    expect(response).toEqual({ status: 200, data: 'OK' });
+    done();
+  });
+
+  it('Should not buy the dip when requests are failing', async (done) => {
+    jest.spyOn(httpClient, 'post').mockReturnValue(of(orderResponse));
+    const getBalance = jest
+      .spyOn(service, 'getBalance')
+      .mockReturnValueOnce(of(allAsset));
+    jest.spyOn(service, 'getPrice').mockImplementation(() => {
+      throw new Error('');
+    });
+    const buyService = jest.spyOn(service, 'bidDips');
+    const clearOrders = jest.spyOn(service, 'clear');
+    await expect(controller.makeBuyDipOrders(dipReq)).rejects.toThrow();
+
+    expect(getBalance).toBeCalled();
+    expect(clearOrders).toBeCalledTimes(2);
+    expect(buyService).toBeCalledWith(
+      dipReq.asset,
+      dipReq.denominator,
+      dipReq.dip,
+    );
+    done();
+  });
+
+  it('Should not buy the dip when request is wrong', async (done) => {
+    let failDipReq = Object.assign({}, dipReq);
+    failDipReq.dip = [];
+    await expect(controller.makeBuyDipOrders(failDipReq)).rejects.toThrow();
     done();
   });
 });
