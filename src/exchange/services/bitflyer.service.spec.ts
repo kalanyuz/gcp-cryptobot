@@ -193,7 +193,7 @@ describe('ExchangeService', () => {
     jest.spyOn(httpClient, 'post').mockReturnValueOnce(of(orderResponse));
     const result = await service.sell('BTC', 'JPY');
 
-    expect(result).toEqual(orderResponse);
+    expect(result).toEqual(orderResponse.data);
     expect(getBalance).toBeCalledWith('JPY');
     expect(getBalance).toBeCalledTimes(1);
     done();
@@ -207,7 +207,7 @@ describe('ExchangeService', () => {
     jest.spyOn(httpClient, 'post').mockReturnValueOnce(of(orderResponse));
     const result = await service.sell('BTC', 'JPY', 0.01);
 
-    expect(result).toEqual(orderResponse);
+    expect(result).toEqual(orderResponse.data);
     expect(getBalance).not.toBeCalled();
     done();
   });
@@ -239,7 +239,7 @@ describe('ExchangeService', () => {
     jest.spyOn(httpClient, 'post').mockReturnValueOnce(of(orderResponse));
     const result = await service.buy('ETH', 'BTC', OrderType.Market);
 
-    expect(result).toEqual(orderResponse);
+    expect(result).toEqual(orderResponse.data);
     expect(getBalance).toBeCalledWith('BTC');
     expect(getBalance).toBeCalledTimes(1);
     done();
@@ -253,7 +253,7 @@ describe('ExchangeService', () => {
     jest.spyOn(httpClient, 'post').mockReturnValueOnce(of(orderResponse));
     const result = await service.buy('DOGE', 'BTC', OrderType.Market, 0.01);
 
-    expect(result).toEqual(orderResponse);
+    expect(result).toEqual(orderResponse.data);
     expect(getBalance).not.toBeCalled();
     done();
   });
@@ -284,7 +284,7 @@ describe('ExchangeService', () => {
       .mockReturnValueOnce(of(orderResponse));
     const result = await service.buy('ETH', 'BTC', OrderType.Market);
 
-    expect(result).toEqual(orderResponse);
+    expect(result).toEqual(orderResponse.data);
 
     expect(buyRequest).toHaveBeenCalledWith(
       expect.anything(),
@@ -327,9 +327,9 @@ describe('ExchangeService', () => {
 
     expect(buyLimit).toBeCalledTimes(3);
     expect(buyLimit.mock.calls.map((item) => item[3])).toEqual([
-      17360 * 0.1,
-      17360 * 0.2,
-      17360 * 0.4,
+      0.03858,
+      0.0868,
+      0.1984,
     ]);
     expect(buyLimit.mock.calls.map((item) => item[4])).toEqual([
       50000 * 0.9,
