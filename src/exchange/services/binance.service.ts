@@ -221,6 +221,7 @@ export class BinanceExchange extends ExchangeService {
         headers: this.key,
       })
       .pipe(
+        map((item) => item.data),
         catchError((err) => {
           console.error(err.response.data);
           return throwError(err);
@@ -259,6 +260,7 @@ export class BinanceExchange extends ExchangeService {
         headers: this.key,
       })
       .pipe(
+        map((item) => item.data),
         catchError((err) => {
           console.error(err.response.data);
           return throwError(err);
@@ -280,6 +282,7 @@ export class BinanceExchange extends ExchangeService {
         headers: this.key,
       })
       .pipe(
+        map((item) => item.data),
         catchError((err) => {
           console.error(err.response.data);
           return throwError(err);
