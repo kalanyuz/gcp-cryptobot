@@ -8,6 +8,7 @@ export interface BitFlyerSignature {
   'ACCESS-KEY': string;
   'ACCESS-TIMESTAMP': string;
   'ACCESS-SIGN': string;
+  'Content-Type': string;
 }
 
 export interface BitFlyerBalance {

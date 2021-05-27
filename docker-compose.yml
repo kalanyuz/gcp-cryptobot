@@ -17,3 +17,4 @@ services:
       - GUARD=none
       - EXCHANGE=binance
       - CONFIGFILE=config.binance.sample.yaml
+      - GOOGLE_APPLICATION_CREDENTIALS=/usr/src/app/test-service-account.json

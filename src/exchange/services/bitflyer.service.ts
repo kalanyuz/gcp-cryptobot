@@ -25,8 +25,6 @@ import {
   BitFlyerSignature,
 } from './bitflyer.entities';
 import { Dip, OrderType } from '../entities/exchange';
-import { request } from 'express';
-
 @Injectable()
 export class BitFlyerExchange extends ExchangeService {
   baseURL: string = 'https://api.bitflyer.com';
@@ -75,11 +73,11 @@ export class BitFlyerExchange extends ExchangeService {
       .createHmac('sha256', this.secret)
       .update(text)
       .digest('hex');
-
     return {
       'ACCESS-KEY': this.key,
       'ACCESS-TIMESTAMP': timestamp,
       'ACCESS-SIGN': signature,
+      'Content-Type': 'application/json',
     };
   }
 
@@ -218,6 +216,7 @@ export class BitFlyerExchange extends ExchangeService {
         headers: signature,
       })
       .pipe(
+        map((item) => item.data),
         catchError((err) => {
           console.error(err.response.data);
           return throwError(err);
@@ -261,6 +260,7 @@ export class BitFlyerExchange extends ExchangeService {
         headers: signature,
       })
       .pipe(
+        map((item) => item.data),
         catchError((err) => {
           console.error(err.response.data);
           return throwError(err);
@@ -282,6 +282,7 @@ export class BitFlyerExchange extends ExchangeService {
         headers: signature,
       })
       .pipe(
+        map((item) => item.data),
         catchError((err) => {
           console.error(err.response.data);
           return throwError(err);
@@ -300,17 +301,13 @@ export class BitFlyerExchange extends ExchangeService {
       const buyingAsset = myAsset.balances.filter(
         (item) => item.currency_code === using,
       )[0];
-
       await Promise.all(
-        dipConfig.map(async (dip) =>
-          this.buy(
-            asset,
-            using,
-            OrderType.Limit,
-            buyingAsset.available! * (dip.allocation / 100),
-            assetPrice.amount * (1 - dip.percent / 100),
-          ),
-        ),
+        dipConfig.map(async (dip) => {
+          const funds = buyingAsset.available * (dip.allocation / 100);
+          const price = Math.floor(assetPrice.amount * (1 - dip.percent / 100));
+          const unit = parseFloat((funds / price).toPrecision(4));
+          return this.buy(asset, using, OrderType.Limit, unit, price);
+        }),
       );
       return { status: 200, data: 'OK' };
     } catch (err) {
