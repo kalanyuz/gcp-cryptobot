@@ -131,7 +131,7 @@ describe('ExchangeController', () => {
       OrderType.Market,
       undefined,
     );
-    expect(response).toEqual(orderResponse);
+    expect(response).toEqual(orderResponse.data);
     done();
   });
 
@@ -147,7 +147,7 @@ describe('ExchangeController', () => {
 
     expect(getBalance).not.toBeCalled();
     expect(buyService).toBeCalledWith('ETH', 'BTC', OrderType.Market, 2);
-    expect(response).toEqual(orderResponse);
+    expect(response).toEqual(orderResponse.data);
     done();
   });
 
@@ -161,7 +161,7 @@ describe('ExchangeController', () => {
 
     expect(getBalance).toBeCalledWith('BTC');
     expect(sellService).toBeCalledWith('ETH', 'BTC', undefined);
-    expect(response).toEqual(orderResponse);
+    expect(response).toEqual(orderResponse.data);
     done();
   });
 
@@ -177,7 +177,7 @@ describe('ExchangeController', () => {
 
     expect(getBalance).not.toBeCalled();
     expect(sellService).toBeCalledWith('ETH', 'BTC', 2);
-    expect(response).toEqual(orderResponse);
+    expect(response).toEqual(orderResponse.data);
     done();
   });
 });

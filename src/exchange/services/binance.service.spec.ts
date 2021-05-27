@@ -264,7 +264,7 @@ describe('ExchangeService', () => {
     jest.spyOn(httpClient, 'post').mockReturnValueOnce(of(orderResponse));
     const result = await service.sell('BTC', 'USDT');
 
-    expect(result).toEqual(orderResponse);
+    expect(result).toEqual(orderResponse.data);
     expect(getBalance).toBeCalledWith('USDT');
     expect(getBalance).toBeCalledTimes(1);
     done();
@@ -278,7 +278,7 @@ describe('ExchangeService', () => {
     jest.spyOn(httpClient, 'post').mockReturnValueOnce(of(orderResponse));
     const result = await service.sell('BTC', 'USDT', 0.01);
 
-    expect(result).toEqual(orderResponse);
+    expect(result).toEqual(orderResponse.data);
     expect(getBalance).not.toBeCalled();
     done();
   });
@@ -310,7 +310,7 @@ describe('ExchangeService', () => {
     jest.spyOn(httpClient, 'post').mockReturnValueOnce(of(orderResponse));
     const result = await service.buy('ETH', 'BTC');
 
-    expect(result).toEqual(orderResponse);
+    expect(result).toEqual(orderResponse.data);
     expect(getBalance).toBeCalledWith('BTC');
     expect(getBalance).toBeCalledTimes(1);
     done();
@@ -324,7 +324,7 @@ describe('ExchangeService', () => {
     jest.spyOn(httpClient, 'post').mockReturnValueOnce(of(orderResponse));
     const result = await service.buy('DOGE', 'BTC', OrderType.Market, 0.01);
 
-    expect(result).toEqual(orderResponse);
+    expect(result).toEqual(orderResponse.data);
     expect(getBalance).not.toBeCalled();
     done();
   });
@@ -355,7 +355,7 @@ describe('ExchangeService', () => {
       .mockReturnValueOnce(of(orderResponse));
     const result = await service.buy('ETH', 'BTC');
 
-    expect(result).toEqual(orderResponse);
+    expect(result).toEqual(orderResponse.data);
 
     expect(buyRequest).toHaveBeenCalledWith(
       expect.stringContaining('symbol=ETHBTC&side=BUY&type=MARKET&quantity='),
