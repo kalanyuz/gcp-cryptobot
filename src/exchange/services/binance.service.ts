@@ -43,25 +43,20 @@ export class BinanceExchange extends ExchangeService {
     secretService: SecretsService,
   ) {
     super(httpService, secretService);
-    const apiKeyName: string = configs.settings['api_keyname'];
-    const secretKeyName: string = configs.settings['secret_keyname'];
-
-    secretService
-      .getSecret(apiKeyName)
-      .then((key) => {
-        this.key['X-MBX-APIKEY'] = key;
-      })
-      .catch((error) => console.error(error));
-
-    secretService
-      .getSecret(secretKeyName)
-      .then((key) => {
-        this.secret = key;
-      })
-      .catch((error) => console.error(error));
   }
 
-  private createSignature(query: string): string {
+  private async initSecrets(): Promise<void> {
+    const apiKeyName: string = this.configs.settings['api_keyname'];
+    const secretKeyName: string = this.configs.settings['secret_keyname'];
+
+    if (this.secret === '' || this.key['X-MBX-APIKEY'] === '') {
+      this.key['X-MBX-APIKEY'] = await this.secretService.getSecret(apiKeyName);
+      this.secret = await this.secretService.getSecret(secretKeyName);
+    }
+  }
+
+  private async createSignature(query: string): Promise<string> {
+    await this.initSecrets();
     const signature = crypto
       .createHmac('sha256', this.secret)
       .update(query)
@@ -124,10 +119,10 @@ export class BinanceExchange extends ExchangeService {
     return price;
   }
 
-  async getBalance(priceIn: string): Promise<Observable<Balance>> {
+  async getBalance(priceIn: string): Promise<Balance> {
     const path = '/api/v3/account?';
     const query = `timestamp=${await this.getTime()}`;
-    const signature = this.createSignature(query);
+    const signature = await this.createSignature(query);
     const response = this.httpService.get(
       `${this.baseURL}${path}${query}&signature=${signature}`,
       {
@@ -174,7 +169,7 @@ export class BinanceExchange extends ExchangeService {
     return forkJoin({
       balances,
       total,
-    });
+    }).toPromise();
   }
 
   async buy(
@@ -188,7 +183,7 @@ export class BinanceExchange extends ExchangeService {
     /* if amount is not specified, getBalance and check rebalancing configuration */
     if (amount === undefined) {
       try {
-        const myAsset = await from(await this.getBalance(using))
+        const myAsset = await of(await this.getBalance(using))
           .pipe(
             map((x) => x.total),
             filter((x) => x.currency_code === using),
@@ -215,7 +210,7 @@ export class BinanceExchange extends ExchangeService {
     if (mode === OrderType.Limit) {
       query = `${query}&price=${price}&timeInForce=GTC`;
     }
-    const signature = this.createSignature(query);
+    const signature = await this.createSignature(query);
     const response = this.httpService
       .post(`${this.baseURL}${path}${query}&signature=${signature}`, null, {
         headers: this.key,
@@ -235,7 +230,7 @@ export class BinanceExchange extends ExchangeService {
   async sell(asset: string, sellFor: string, amount?: number): Promise<any> {
     if (amount === undefined) {
       try {
-        const myAsset = await from(await this.getBalance(sellFor))
+        const myAsset = await of(await this.getBalance(sellFor))
           .pipe(
             mergeMap((x) => x.balances),
             filter((x) => x['currency_code'] === asset),
@@ -254,7 +249,7 @@ export class BinanceExchange extends ExchangeService {
     const path = '/api/v3/order?';
     const timestamp = new Date().getTime().toString();
     const query = `symbol=${asset}${sellFor}&side=BUY&type=MARKET&quantity=${amount}&newOrderRespType=FULL&timestamp=${timestamp}`;
-    const signature = this.createSignature(query);
+    const signature = await this.createSignature(query);
     const response = this.httpService
       .post(`${this.baseURL}${path}${query}&signature=${signature}`, null, {
         headers: this.key,
@@ -271,27 +266,8 @@ export class BinanceExchange extends ExchangeService {
     return response;
   }
 
-  clear(asset: string, denominator: string): Promise<any> {
-    const path = '/v1/me/cancelallchildorders';
-    const requestBody = JSON.stringify({
-      product_code: `${asset}_${denominator}`,
-    });
-    const signature = this.createSignature('');
-    const response = this.httpService
-      .post(this.baseURL + path, requestBody, {
-        headers: this.key,
-      })
-      .pipe(
-        map((item) => item.data),
-        catchError((err) => {
-          console.error(err.response.data);
-          return throwError(err);
-        }),
-      )
-      .toPromise();
-
-    return response;
-  }
+  // TODO: implement
+  clear: undefined;
 
   // TODO: implement
   bidDips: undefined;

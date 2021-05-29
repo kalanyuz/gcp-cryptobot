@@ -146,7 +146,7 @@ describe('ExchangeService', () => {
     });
   });
 
-  it('should filter out balance that is 0', (done) => {
+  it('should filter out balance that is 0', async (done) => {
     jest.spyOn(service, 'getPrice').mockReturnValue(
       of({
         amount: 0.02357742,
@@ -154,7 +154,7 @@ describe('ExchangeService', () => {
       }),
     );
     jest.spyOn(httpClient, 'get').mockReturnValueOnce(of(balanceResponse));
-    const result = service.getBalance('BTC');
+    const result = of(await service.getBalance('BTC'));
 
     result.subscribe({
       next: (x) => {
@@ -164,7 +164,7 @@ describe('ExchangeService', () => {
     });
   });
 
-  it('should correctly calculate output balance', (done) => {
+  it('should correctly calculate output balance', async (done) => {
     jest.spyOn(service, 'getPrice').mockReturnValue(
       of({
         amount: 0.02357742,
@@ -172,7 +172,7 @@ describe('ExchangeService', () => {
       }),
     );
     jest.spyOn(httpClient, 'get').mockReturnValueOnce(of(balanceResponse));
-    const result = service.getBalance('BTC');
+    const result = of(await service.getBalance('BTC'));
 
     result.subscribe({
       next: (x) => {
@@ -185,10 +185,10 @@ describe('ExchangeService', () => {
     });
   });
 
-  it('should find the amount of asset to sell when not specified', async (done) => {
+  it('should find the amount of asset to sell when not specified', async () => {
     const getBalance = jest
       .spyOn(service, 'getBalance')
-      .mockReturnValue(of(allAsset));
+      .mockResolvedValue(allAsset);
 
     jest.spyOn(httpClient, 'post').mockReturnValueOnce(of(orderResponse));
     const result = await service.sell('BTC', 'JPY');
@@ -196,45 +196,42 @@ describe('ExchangeService', () => {
     expect(result).toEqual(orderResponse.data);
     expect(getBalance).toBeCalledWith('JPY');
     expect(getBalance).toBeCalledTimes(1);
-    done();
   });
 
-  it('should not find the amount of asset to sell when specified', async (done) => {
+  it('should not find the amount of asset to sell when specified', async () => {
     const getBalance = jest
       .spyOn(service, 'getBalance')
-      .mockReturnValue(of('' as any));
+      .mockResolvedValue('' as any);
 
     jest.spyOn(httpClient, 'post').mockReturnValueOnce(of(orderResponse));
     const result = await service.sell('BTC', 'JPY', 0.01);
 
     expect(result).toEqual(orderResponse.data);
     expect(getBalance).not.toBeCalled();
-    done();
   });
 
-  it('should throw when asset to sell is not found', async (done) => {
+  it('should throw when asset to sell is not found', async () => {
     const getBalance = jest
       .spyOn(service, 'getBalance')
-      .mockReturnValue(of(allAsset));
+      .mockResolvedValue(allAsset);
 
     jest.spyOn(httpClient, 'post').mockReturnValueOnce(of(orderResponse));
     const result = service.sell('DOGE', 'JPY');
 
-    expect(result).rejects.toThrow(
+    expect(getBalance).toBeCalledWith('JPY');
+    expect(getBalance).toBeCalledTimes(1);
+    await expect(result).rejects.toThrow(
       new HttpException(
         'Could not find an asset to sell.',
         HttpStatus.BAD_REQUEST,
       ),
     );
-    expect(getBalance).toBeCalledWith('JPY');
-    expect(getBalance).toBeCalledTimes(1);
-    done();
   });
 
-  it('should find the amount of asset to buy when not specified', async (done) => {
+  it('should find the amount of asset to buy when not specified', async () => {
     const getBalance = jest
       .spyOn(service, 'getBalance')
-      .mockReturnValue(of(allAsset));
+      .mockResolvedValue(allAsset);
 
     jest.spyOn(httpClient, 'post').mockReturnValueOnce(of(orderResponse));
     const result = await service.buy('ETH', 'BTC', OrderType.Market);
@@ -242,31 +239,29 @@ describe('ExchangeService', () => {
     expect(result).toEqual(orderResponse.data);
     expect(getBalance).toBeCalledWith('BTC');
     expect(getBalance).toBeCalledTimes(1);
-    done();
   });
 
-  it('should not find the amount of asset to buy when specified', async (done) => {
+  it('should not find the amount of asset to buy when specified', async () => {
     const getBalance = jest
       .spyOn(service, 'getBalance')
-      .mockReturnValue(of('' as any));
+      .mockResolvedValue('' as any);
 
     jest.spyOn(httpClient, 'post').mockReturnValueOnce(of(orderResponse));
     const result = await service.buy('DOGE', 'BTC', OrderType.Market, 0.01);
 
     expect(result).toEqual(orderResponse.data);
     expect(getBalance).not.toBeCalled();
-    done();
   });
 
-  it('should throw when asset to buy with is not found', async (done) => {
+  it('should throw when asset to buy with is not found', async () => {
     const getBalance = jest
       .spyOn(service, 'getBalance')
-      .mockReturnValue(of(allAsset));
+      .mockResolvedValue(allAsset);
 
     jest.spyOn(httpClient, 'post').mockReturnValueOnce(of(orderResponse));
     const result = service.buy('BTC', 'DOGE', OrderType.Market);
 
-    expect(result).rejects.toThrow(
+    await expect(result).rejects.toThrow(
       new HttpException(
         'Could not calculate total available asset',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -274,18 +269,16 @@ describe('ExchangeService', () => {
     );
     expect(getBalance).toBeCalledWith('DOGE');
     expect(getBalance).toBeCalledTimes(1);
-    done();
   });
 
-  it('should rebalance correctly when amount is not specified', async (done) => {
-    jest.spyOn(service, 'getBalance').mockReturnValue(of(allAsset));
+  it('should rebalance correctly when amount is not specified', async () => {
+    jest.spyOn(service, 'getBalance').mockResolvedValue(allAsset);
     const buyRequest = jest
       .spyOn(httpClient, 'post')
       .mockReturnValueOnce(of(orderResponse));
     const result = await service.buy('ETH', 'BTC', OrderType.Market);
 
     expect(result).toEqual(orderResponse.data);
-
     expect(buyRequest).toHaveBeenCalledWith(
       expect.anything(),
       JSON.stringify({
@@ -297,17 +290,16 @@ describe('ExchangeService', () => {
       }),
       expect.anything(),
     );
-    done();
   });
 
-  it('should buy the dip', async (done) => {
+  it('should buy the dip', async () => {
     jest.spyOn(service, 'getPrice').mockReturnValue(
       of({
         amount: 50000,
         currency_code: 'JPY',
       }),
     );
-    jest.spyOn(service, 'getBalance').mockReturnValue(of(allAsset));
+    jest.spyOn(service, 'getBalance').mockResolvedValue(allAsset);
     const buyLimit = jest.spyOn(service, 'buy');
     jest.spyOn(httpClient, 'post').mockReturnValue(of(orderResponse));
     const dipBought = await service.bidDips('BTC', 'JPY', [
@@ -337,6 +329,5 @@ describe('ExchangeService', () => {
       50000 * 0.7,
     ]);
     expect(dipBought).toEqual({ status: 200, data: 'OK' });
-    done();
   });
 });

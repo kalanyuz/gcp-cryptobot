@@ -98,29 +98,27 @@ describe('ExchangeController', () => {
     controller = new ExchangeController(service);
   });
 
-  it('Should throw when buy parameter type is not correct', async (done) => {
+  it('Should throw when buy parameter type is not correct', async () => {
     const result = controller.makeBuyOrder({
       asset: undefined,
       denominator: undefined,
     } as any);
-    expect(result).rejects.toThrow();
-    done();
+    await expect(result).rejects.toThrow();
   });
 
-  it('Should throw when sell parameter type is not correct', async (done) => {
+  it('Should throw when sell parameter type is not correct', async () => {
     const result = controller.makeSellOrder({
       asset: undefined,
       denominator: undefined,
     } as any);
-    expect(result).rejects.toThrow();
-    done();
+    await expect(result).rejects.toThrow();
   });
 
-  it('Should buy correctly when amount is undefined', async (done) => {
+  it('Should buy correctly when amount is undefined', async () => {
     jest.spyOn(httpClient, 'post').mockReturnValueOnce(of(orderResponse));
     const getBalance = jest
       .spyOn(service, 'getBalance')
-      .mockResolvedValueOnce(of(allAsset));
+      .mockResolvedValueOnce(allAsset);
     const buyService = jest.spyOn(service, 'buy');
     const response = await controller.makeBuyOrder(botReq);
 
@@ -132,14 +130,13 @@ describe('ExchangeController', () => {
       undefined,
     );
     expect(response).toEqual(orderResponse.data);
-    done();
   });
 
-  it('Should buy correctly when amount is defined', async (done) => {
+  it('Should buy correctly when amount is defined', async () => {
     jest.spyOn(httpClient, 'post').mockReturnValueOnce(of(orderResponse));
     const getBalance = jest
       .spyOn(service, 'getBalance')
-      .mockResolvedValueOnce(of(allAsset));
+      .mockResolvedValueOnce(allAsset);
     const buyService = jest.spyOn(service, 'buy');
     let botRegWithAmount = Object.assign({}, botReq);
     botRegWithAmount.amount = 2;
@@ -148,28 +145,26 @@ describe('ExchangeController', () => {
     expect(getBalance).not.toBeCalled();
     expect(buyService).toBeCalledWith('ETH', 'BTC', OrderType.Market, 2);
     expect(response).toEqual(orderResponse.data);
-    done();
   });
 
-  it('Should sell correctly when amount is undefined', async (done) => {
+  it('Should sell correctly when amount is undefined', async () => {
     jest.spyOn(httpClient, 'post').mockReturnValueOnce(of(orderResponse));
     const getBalance = jest
       .spyOn(service, 'getBalance')
-      .mockResolvedValueOnce(of(allAsset));
+      .mockResolvedValueOnce(allAsset);
     const sellService = jest.spyOn(service, 'sell');
     const response = await controller.makeSellOrder(botReq);
 
     expect(getBalance).toBeCalledWith('BTC');
     expect(sellService).toBeCalledWith('ETH', 'BTC', undefined);
     expect(response).toEqual(orderResponse.data);
-    done();
   });
 
-  it('Should sell correctly when amount is defined', async (done) => {
+  it('Should sell correctly when amount is defined', async () => {
     jest.spyOn(httpClient, 'post').mockReturnValueOnce(of(orderResponse));
     const getBalance = jest
       .spyOn(service, 'getBalance')
-      .mockResolvedValueOnce(of(allAsset));
+      .mockResolvedValueOnce(allAsset);
     const sellService = jest.spyOn(service, 'sell');
     let botRegWithAmount = Object.assign({}, botReq);
     botRegWithAmount.amount = 2;
@@ -178,6 +173,5 @@ describe('ExchangeController', () => {
     expect(getBalance).not.toBeCalled();
     expect(sellService).toBeCalledWith('ETH', 'BTC', 2);
     expect(response).toEqual(orderResponse.data);
-    done();
   });
 });
