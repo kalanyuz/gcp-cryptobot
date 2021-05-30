@@ -10,7 +10,7 @@ Visit the [wiki](https://github.com/kalanyuz/gcp-cryptobot/wiki) section to see 
 
 ## System diagram and example use cases
 
-![system diagram](https://storage.googleapis.com/gcp-cryptobot/v012diagram.png)
+![system diagram](https://storage.googleapis.com/gcp-cryptobot/v013diagram.png)
 
 ## Disclaimer
 
