@@ -43,29 +43,24 @@ export class BitFlyerExchange extends ExchangeService {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
-    const apiKeyName: string = configs.settings['api_keyname'];
-    const secretKeyName: string = configs.settings['secret_keyname'];
-
-    secretService
-      .getSecret(apiKeyName)
-      .then((key) => {
-        this.key = key;
-      })
-      .catch((error) => console.error(error));
-
-    secretService
-      .getSecret(secretKeyName)
-      .then((key) => {
-        this.secret = key;
-      })
-      .catch((error) => console.error(error));
   }
 
-  private createSignature(
+  private async initSecrets(): Promise<void> {
+    const apiKeyName: string = this.configs.settings['api_keyname'];
+    const secretKeyName: string = this.configs.settings['secret_keyname'];
+
+    if (this.secret === '' || this.key === '') {
+      this.key = await this.secretService.getSecret(apiKeyName);
+      this.secret = await this.secretService.getSecret(secretKeyName);
+    }
+  }
+
+  private async createSignature(
     method: string,
     path: string,
     body?: string,
-  ): BitFlyerSignature {
+  ): Promise<BitFlyerSignature> {
+    await this.initSecrets();
     const timestamp = Date.now().toString();
     const bodyString = body ?? '';
     const text = timestamp + method + path + bodyString;
@@ -121,9 +116,9 @@ export class BitFlyerExchange extends ExchangeService {
     return price;
   }
 
-  getBalance(priceIn: string): Observable<BitFlyerBalance> {
+  async getBalance(priceIn: string): Promise<BitFlyerBalance> {
     const path = '/v1/me/getbalance';
-    const signature = this.createSignature('GET', path);
+    const signature = await this.createSignature('GET', path);
     const response = this.httpService.get(`${this.baseURL}${path}`, {
       headers: signature,
     });
@@ -162,7 +157,7 @@ export class BitFlyerExchange extends ExchangeService {
     return forkJoin({
       balances,
       total,
-    });
+    }).toPromise();
   }
 
   async buy(
@@ -176,7 +171,7 @@ export class BitFlyerExchange extends ExchangeService {
     /* if amount is not specified, getBalance and check rebalancing configuration */
     if (amount === undefined) {
       try {
-        const myAsset = await this.getBalance(using)
+        const myAsset = await of(await this.getBalance(using))
           .pipe(
             map((x) => x.total),
             filter((x) => x.currency_code === using),
@@ -210,7 +205,11 @@ export class BitFlyerExchange extends ExchangeService {
       requestBody = Object.assign({ price }, requestBody);
     }
     const requestBodyString = JSON.stringify(requestBody);
-    const signature = this.createSignature('POST', path, requestBodyString);
+    const signature = await this.createSignature(
+      'POST',
+      path,
+      requestBodyString,
+    );
     const response = this.httpService
       .post(this.baseURL + path, requestBodyString, {
         headers: signature,
@@ -230,7 +229,7 @@ export class BitFlyerExchange extends ExchangeService {
   async sell(asset: string, sellFor: string, amount?: number): Promise<any> {
     if (amount === undefined) {
       try {
-        const myAsset = await this.getBalance(sellFor)
+        const myAsset = await of(await this.getBalance(sellFor))
           .pipe(
             mergeMap((x) => x.balances),
             filter((x) => x['currency_code'] === asset),
@@ -254,7 +253,7 @@ export class BitFlyerExchange extends ExchangeService {
       size: amount,
       time_in_force: 'GTC',
     });
-    const signature = this.createSignature('POST', path, requestBody);
+    const signature = await this.createSignature('POST', path, requestBody);
     const response = this.httpService
       .post(this.baseURL + path, requestBody, {
         headers: signature,
@@ -271,12 +270,12 @@ export class BitFlyerExchange extends ExchangeService {
     return response;
   }
 
-  clear(asset: string, denominator: string): Promise<any> {
+  async clear(asset: string, denominator: string): Promise<any> {
     const path = '/v1/me/cancelallchildorders';
     const requestBody = JSON.stringify({
       product_code: `${asset}_${denominator}`,
     });
-    const signature = this.createSignature('POST', path, requestBody);
+    const signature = await this.createSignature('POST', path, requestBody);
     const response = this.httpService
       .post(this.baseURL + path, requestBody, {
         headers: signature,
@@ -296,7 +295,7 @@ export class BitFlyerExchange extends ExchangeService {
   async bidDips(asset: string, using: string, dipConfig: Dip[]): Promise<any> {
     try {
       await this.clear(asset, using);
-      const myAsset = await this.getBalance(using).toPromise();
+      const myAsset = await this.getBalance(using);
       const assetPrice = await this.getPrice(asset, using).toPromise();
       const buyingAsset = myAsset.balances.filter(
         (item) => item.currency_code === using,
