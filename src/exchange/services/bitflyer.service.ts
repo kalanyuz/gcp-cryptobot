@@ -205,7 +205,11 @@ export class BitFlyerExchange extends ExchangeService {
       requestBody = Object.assign({ price }, requestBody);
     }
     const requestBodyString = JSON.stringify(requestBody);
-    const signature = this.createSignature('POST', path, requestBodyString);
+    const signature = await this.createSignature(
+      'POST',
+      path,
+      requestBodyString,
+    );
     const response = this.httpService
       .post(this.baseURL + path, requestBodyString, {
         headers: signature,
@@ -249,7 +253,7 @@ export class BitFlyerExchange extends ExchangeService {
       size: amount,
       time_in_force: 'GTC',
     });
-    const signature = this.createSignature('POST', path, requestBody);
+    const signature = await this.createSignature('POST', path, requestBody);
     const response = this.httpService
       .post(this.baseURL + path, requestBody, {
         headers: signature,
@@ -271,7 +275,7 @@ export class BitFlyerExchange extends ExchangeService {
     const requestBody = JSON.stringify({
       product_code: `${asset}_${denominator}`,
     });
-    const signature = this.createSignature('POST', path, requestBody);
+    const signature = await this.createSignature('POST', path, requestBody);
     const response = this.httpService
       .post(this.baseURL + path, requestBody, {
         headers: signature,
