@@ -40,7 +40,7 @@ $ docker-compose exec app yarn start
 $ docker-compose exec app yarn test
 ```
 
-## Additional resources
+## Additional resources & tutorials
 
 - [Cloud Run community FAQs](https://github.com/ahmetb/cloud-run-faq)
 - [I wrote a serverless app to automate my cryptocurrency purchases on GCP](https://medium.com/coinmonks/i-wrote-a-serverless-app-to-automate-my-cryptocurrency-purchases-17c9a869d0c7)
