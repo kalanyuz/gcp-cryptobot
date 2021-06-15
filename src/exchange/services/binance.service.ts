@@ -79,7 +79,6 @@ export class BinanceExchange extends ExchangeService {
   }
 
   getPrice(ofProduct: string, priceIn: string): Observable<Asset> {
-    /* TODO: You can't get a price of stable coin */
     const path = '/api/v3/ticker/price?';
     const response = this.httpService.get(
       `${this.baseURL}${path}symbol=${ofProduct}${priceIn}`,
@@ -197,16 +196,17 @@ export class BinanceExchange extends ExchangeService {
 
         amount *= ratio;
       } catch (error) {
-        throw new HttpException(
-          'Could not calculate total available asset',
-          HttpStatus.INTERNAL_SERVER_ERROR,
-        );
+        const errorMessage = 'Could not calculate total available asset.';
+        console.error(errorMessage);
+        throw new HttpException(errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
       }
     }
 
     const path = '/api/v3/order?';
     const timestamp = await this.getTime();
-    let query = `symbol=${asset}${using}&side=BUY&type=${mode}&quantity=${amount}&newOrderRespType=FULL&timestamp=${timestamp}`;
+    let query = `symbol=${asset}${using}&side=BUY&type=${mode}&quantity=${amount.toFixed(
+      8,
+    )}&newOrderRespType=FULL&timestamp=${timestamp}`;
     if (mode === OrderType.Limit) {
       query = `${query}&price=${price}&timeInForce=GTC`;
     }
@@ -239,6 +239,8 @@ export class BinanceExchange extends ExchangeService {
 
         amount = myAsset['amount'];
       } catch (error) {
+        const errorMessage = 'Could not find an asset to sell.';
+        console.error(errorMessage);
         throw new HttpException(
           'Could not find an asset to sell.',
           HttpStatus.EXPECTATION_FAILED,
@@ -248,7 +250,9 @@ export class BinanceExchange extends ExchangeService {
 
     const path = '/api/v3/order?';
     const timestamp = new Date().getTime().toString();
-    const query = `symbol=${asset}${sellFor}&side=BUY&type=MARKET&quantity=${amount}&newOrderRespType=FULL&timestamp=${timestamp}`;
+    const query = `symbol=${asset}${sellFor}&side=BUY&type=MARKET&quantity=${amount.toFixed(
+      8,
+    )}&newOrderRespType=FULL&timestamp=${timestamp}`;
     const signature = await this.createSignature(query);
     const response = this.httpService
       .post(`${this.baseURL}${path}${query}&signature=${signature}`, null, {

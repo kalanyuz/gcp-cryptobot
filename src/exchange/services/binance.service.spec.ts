@@ -334,7 +334,7 @@ describe('ExchangeService', () => {
 
     await expect(result).rejects.toThrow(
       new HttpException(
-        'Could not calculate total available asset',
+        'Could not calculate total available asset.',
         HttpStatus.INTERNAL_SERVER_ERROR,
       ),
     );
