@@ -65,6 +65,51 @@ export class BinanceExchange extends ExchangeService {
     return signature;
   }
 
+  getLotSize(ofProduct: string, priceIn: string): Observable<any> {
+    const path = '/api/v3/exchangeInfo?';
+    const response = this.httpService.get(
+      `${this.baseURL}${path}symbol=${ofProduct}${priceIn}`,
+    );
+    const price = response.pipe(
+      map((x) => x.data),
+      map((x) => {
+        if (x['symbols'][0].symbol !== `${ofProduct}${priceIn}`) {
+          console.error(
+            'Price info returned different from what is requested.',
+          );
+          throw new HttpException(
+            'Failed to get price info',
+            HttpStatus.EXPECTATION_FAILED,
+          );
+        }
+        try {
+          const lotInfo = x['symbols'][0].filters
+            .filter((item) => item.filterType === 'LOT_SIZE')
+            .pop();
+          const minQuantity = parseFloat(lotInfo['minQty']);
+          const stepSize = parseFloat(lotInfo['stepSize']);
+          if (isNaN(minQuantity)) throw 'NaN';
+
+          return {
+            min_quantity: minQuantity,
+            step_size: stepSize,
+            currency_code: `${ofProduct}${priceIn}`,
+          };
+        } catch (err) {
+          console.error(err);
+          throw new HttpException(
+            'Failed to get price info',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+      }),
+      catchError((err) => {
+        return throwError(err);
+      }),
+    );
+    return price;
+  }
+
   getTime(): Promise<number> {
     const path = '/api/v3/time';
     const response = this.httpService.get(`${this.baseURL}${path}`);
@@ -101,7 +146,7 @@ export class BinanceExchange extends ExchangeService {
 
           return {
             amount: price,
-            currency_code: priceIn,
+            currency_code: `${ofProduct}${priceIn}`,
           };
         } catch (err) {
           console.error(err);
@@ -193,8 +238,13 @@ export class BinanceExchange extends ExchangeService {
           this.configs.rebalanceProfiles
             ?.filter((x) => x.asset === asset)
             .map((x) => x.ratio as number)[0] ?? 1;
-
         amount *= ratio;
+        const assetPrice = await this.getPrice(asset, using).toPromise();
+        const lotInfo = await this.getLotSize(asset, using).toPromise();
+        console.log(lotInfo);
+        const purchaseAmount = amount / assetPrice.amount;
+        const remainder = (amount / assetPrice.amount) % lotInfo.min_quantity;
+        amount = purchaseAmount - remainder;
       } catch (error) {
         const errorMessage = 'Could not calculate total available asset.';
         console.error(errorMessage);
@@ -210,6 +260,7 @@ export class BinanceExchange extends ExchangeService {
     if (mode === OrderType.Limit) {
       query = `${query}&price=${price}&timeInForce=GTC`;
     }
+    console.log(query);
     const signature = await this.createSignature(query);
     const response = this.httpService
       .post(`${this.baseURL}${path}${query}&signature=${signature}`, null, {
@@ -238,6 +289,10 @@ export class BinanceExchange extends ExchangeService {
           .toPromise();
 
         amount = myAsset['amount'];
+        const lotInfo = await this.getLotSize(asset, sellFor).toPromise();
+        console.log(lotInfo);
+        const remainder = amount % lotInfo.min_quantity;
+        amount = amount - remainder;
       } catch (error) {
         const errorMessage = 'Could not find an asset to sell.';
         console.error(errorMessage);
@@ -249,10 +304,11 @@ export class BinanceExchange extends ExchangeService {
     }
 
     const path = '/api/v3/order?';
-    const timestamp = new Date().getTime().toString();
+    const timestamp = await this.getTime();
     const query = `symbol=${asset}${sellFor}&side=BUY&type=MARKET&quantity=${amount.toFixed(
       8,
     )}&newOrderRespType=FULL&timestamp=${timestamp}`;
+    console.log(query);
     const signature = await this.createSignature(query);
     const response = this.httpService
       .post(`${this.baseURL}${path}${query}&signature=${signature}`, null, {

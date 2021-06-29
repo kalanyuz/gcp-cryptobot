@@ -149,6 +149,34 @@ describe('ExchangeService', () => {
     },
   };
 
+  const lotsizeResponse = {
+    status: 200,
+    statusText: 'OK',
+    headers: {},
+    config: {},
+    data: {
+      timezone: 'UTC',
+      serverTime: 1624974318365,
+      exchangeFilters: [],
+      symbols: [
+        {
+          symbol: 'ADABTC',
+          status: 'TRADING',
+          baseAsset: 'ADA',
+          filters: [
+            {
+              filterType: 'LOT_SIZE',
+              minQty: '0.10000000',
+              maxQty: '90000000.00000000',
+              stepSize: '0.10000000',
+            },
+          ],
+          permissions: ['SPOT', 'MARGIN'],
+        },
+      ],
+    },
+  };
+
   beforeEach(async () => {
     process.env.CONFIGFILE = 'config.binance.sample.yaml';
     secrets = {
@@ -187,7 +215,7 @@ describe('ExchangeService', () => {
       next: (x) => {
         expect(x).toMatchObject({
           amount: 49663.56,
-          currency_code: 'USDT',
+          currency_code: 'BTCUSDT',
         });
       },
       complete: () => done(),
@@ -356,5 +384,17 @@ describe('ExchangeService', () => {
       null,
       expect.anything(),
     );
+  });
+
+  it('should use lot size to calculate correct purchase / sell amount', async () => {
+    jest.spyOn(httpClient, 'get').mockReturnValue(of(lotsizeResponse));
+    const lotInfo = await service.getLotSize('ADA', 'BTC').toPromise();
+
+    const btcAmount = 0.00349461;
+    const adaPrice = 0.00055986;
+    const purchaseAmount = btcAmount / adaPrice;
+    const remainder = (btcAmount / adaPrice) % lotInfo.min_quantity;
+
+    expect(purchaseAmount - remainder).toBe(6.2);
   });
 });

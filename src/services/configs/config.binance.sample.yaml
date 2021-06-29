@@ -8,7 +8,7 @@ configurations:
     - 'LINK:15'
     - 'ADA:10'
   trading_pairs:
-    - 'BTC:USDT'
+    - 'BTC:USDC'
     - 'ETH:BTC'
     - 'LINK:BTC'
     - 'ADA:BTC'
