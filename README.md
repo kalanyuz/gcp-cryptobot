@@ -44,7 +44,12 @@ $ docker-compose exec app yarn test
 
 - [Cloud Run community FAQs](https://github.com/ahmetb/cloud-run-faq)
 - [I wrote a serverless app to automate my cryptocurrency purchases on GCP](https://medium.com/coinmonks/i-wrote-a-serverless-app-to-automate-my-cryptocurrency-purchases-17c9a869d0c7)
-- [Setup guide: Automate DCA and plan for liquidation wicks with gcp-cryptobot](https://kalanyuz.medium.com/setup-guide-automate-dca-and-plan-for-liquidation-wicks-with-gcp-cryptobot-32414ef72251)
+- [Setup guide: Automate DCA and plan for liquidation wicks with gcp-cryptobot](https://medium.com/coinmonks/setup-guide-automate-dca-and-plan-for-liquidation-wicks-with-gcp-cryptobot-32414ef72251)
+- [Setup guide: Automate buy on Tradingview signals with gcp-cryptobot](https://medium.com/coinmonks/setup-guide-automate-buy-on-tradingview-signals-with-gcp-cryptobot-a6941b70924)
+
+## Donations
+
+Donations can be made by sending me BTC at the following address: **bc1q2ja6j0dw7tg8k0rkwfug0lartl6afquj9zad7a**
 
 ## Stay in touch
 
