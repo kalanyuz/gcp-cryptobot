@@ -241,7 +241,6 @@ export class BinanceExchange extends ExchangeService {
         amount *= ratio;
         const assetPrice = await this.getPrice(asset, using).toPromise();
         const lotInfo = await this.getLotSize(asset, using).toPromise();
-        console.log(lotInfo);
         const purchaseAmount = amount / assetPrice.amount;
         const remainder = (amount / assetPrice.amount) % lotInfo.min_quantity;
         amount = purchaseAmount - remainder;
@@ -305,7 +304,7 @@ export class BinanceExchange extends ExchangeService {
 
     const path = '/api/v3/order?';
     const timestamp = await this.getTime();
-    const query = `symbol=${asset}${sellFor}&side=BUY&type=MARKET&quantity=${amount.toFixed(
+    const query = `symbol=${asset}${sellFor}&side=SELL&type=MARKET&quantity=${amount.toFixed(
       8,
     )}&newOrderRespType=FULL&timestamp=${timestamp}`;
     console.log(query);
