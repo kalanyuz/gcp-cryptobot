@@ -1,4 +1,12 @@
-import { Body, Controller, Post, Get, UseInterceptors } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Post,
+  Get,
+  UseInterceptors,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { Observable, of } from 'rxjs';
 import { BotRequest, OrderType } from './entities/exchange';
 import { ExchangeService } from './exchange.service';
@@ -34,6 +42,30 @@ export class ExchangeController {
       OrderType.Market,
       botReq.amount,
     );
+  }
+
+  @UseInterceptors(ExchangeInterceptor)
+  @Post('buywithfiat')
+  async makeBuyOrderWithFiat(@Body() botReq: BotRequest): Promise<any> {
+    console.log(botReq);
+    assertIsString(botReq.asset);
+    assertIsString(botReq.denominator);
+    try {
+      const assetPrice = await this.service
+        .getPrice(botReq.asset, botReq.denominator)
+        .toPromise();
+      return this.service.buy(
+        botReq.asset.trim(),
+        botReq.denominator.trim(),
+        OrderType.Market,
+        botReq.price / assetPrice.amount,
+      );
+    } catch (error) {
+      throw new HttpException(
+        'Could not fetch price feed data',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   @UseInterceptors(ExchangeInterceptor)
