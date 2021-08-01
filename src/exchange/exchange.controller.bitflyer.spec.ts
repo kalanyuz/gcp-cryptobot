@@ -9,6 +9,7 @@ import { BotConfigService } from '../services/configs/botconfigs.service';
 import { SecretsService } from '../services/secrets/secrets.service';
 import { of } from 'rxjs';
 import { BotRequest, OrderType } from './entities/exchange';
+import { BitFlyerAsset } from './services/bitflyer.entities';
 
 describe('ExchangeController', () => {
   let controller: ExchangeController;
@@ -55,6 +56,11 @@ describe('ExchangeController', () => {
       currency_code: 'BTC',
     },
   };
+
+  const assetPrice = {
+    amount: 40000000,
+    currency_code: 'BTC',
+  } as BitFlyerAsset
 
   const orderResponse = {
     status: 200,
@@ -130,7 +136,22 @@ describe('ExchangeController', () => {
     expect(response).toEqual(orderResponse.data);
   });
 
-  it('Should buy correctly when amount is defined', async () => {
+  it('Should buy with fiat', async () => {
+    jest.spyOn(httpClient, 'post').mockReturnValueOnce(of(orderResponse));
+    const getPrice = jest
+      .spyOn(service, 'getPrice')
+      .mockReturnValueOnce(of(assetPrice));
+    const buyService = jest.spyOn(service, 'buy');
+    let botRegWithPrice = Object.assign({}, botReq);
+    botRegWithPrice.price = 10000;
+    const response = await controller.makeBuyOrderWithFiat(botRegWithPrice);
+
+    expect(getPrice).toBeCalled();
+    expect(buyService).toBeCalledWith('ETH', 'BTC', OrderType.Market, 0.00025);
+    expect(response).toEqual(orderResponse.data);
+  });
+
+    it('Should buy correctly when amount is defined', async () => {
     jest.spyOn(httpClient, 'post').mockReturnValueOnce(of(orderResponse));
     const getBalance = jest
       .spyOn(service, 'getBalance')

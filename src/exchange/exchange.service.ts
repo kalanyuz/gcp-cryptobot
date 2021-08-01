@@ -10,7 +10,7 @@ export abstract class ExchangeService {
     protected secretService: SecretsService,
   ) {}
 
-  abstract getPrice(ofProduct: string, priceIn: string): any;
+  abstract getPrice(ofProduct: string, priceIn: string): Observable<any>;
 
   abstract getBalance(priceIn: string): any;
 
