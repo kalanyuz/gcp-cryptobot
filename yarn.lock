@@ -367,10 +367,10 @@
     minimatch "^3.0.4"
     strip-json-comments "^3.1.1"
 
-"@google-cloud/secret-manager@^3.7.1":
-  version "3.8.1"
-  resolved "https://registry.yarnpkg.com/@google-cloud/secret-manager/-/secret-manager-3.8.1.tgz#fd811848b21db1d52090257769ea44543e78a09a"
-  integrity sha512-eH2p9HqQL0m65UF723mc8zcNIz4wKKE2RJZSusltIHIraU+zsu046Y2q4i6hI5QkL0qhfR48YVKDPn/LcQEb+Q==
+"@google-cloud/secret-manager@^3.9.0":
+  version "3.9.0"
+  resolved "https://registry.yarnpkg.com/@google-cloud/secret-manager/-/secret-manager-3.9.0.tgz#fd0f5fb35a6e3c9a0a5b9611c08a70167e91fdaf"
+  integrity sha512-6dOfiuq3rJWxP6+1D2HbBqZh2SV5taRDljkFal1kCq+P37Pbtx/HYvsB3YTnzHOAkq0jdMOSSMHyBXZhgJrsiA==
   dependencies:
     google-gax "^2.17.1"
 
