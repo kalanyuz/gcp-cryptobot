@@ -259,7 +259,14 @@ describe('ExchangeService', () => {
     const result = await service.getBalance('BTC');
     of(result).subscribe({
       next: (x) => {
-        expect(x.balances).toMatchObject(allAsset.balances);
+        expect(x.balances).toMatchObject(
+          allAsset.balances.filter(
+            (item) =>
+              config.rebalanceProfiles.find(
+                (a) => a.asset === item.currency_code,
+              ) !== undefined,
+          ),
+        );
       },
       complete: () => done(),
     });
@@ -277,7 +284,7 @@ describe('ExchangeService', () => {
 
     of(result).subscribe({
       next: (x) => {
-        expect(x.total.amount).toBeCloseTo(1.09329668);
+        expect(x.total.amount).toBeCloseTo(1.02256442);
         expect(x.total.currency_code).toBe('BTC');
       },
       complete: () => done(),

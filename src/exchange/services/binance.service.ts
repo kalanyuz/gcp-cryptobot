@@ -20,6 +20,8 @@ import * as crypto from 'crypto';
 import { forkJoin } from 'rxjs';
 import { SecretsService } from '../../services/secrets/secrets.service';
 import { Asset, Balance, OrderType } from '../entities/exchange';
+import { config } from 'yargs';
+import { decimalPlaces } from '../../utils/helper';
 
 /**
  * Notes about using binance testnet.
@@ -30,7 +32,10 @@ import { Asset, Balance, OrderType } from '../entities/exchange';
  */
 @Injectable()
 export class BinanceExchange extends ExchangeService {
-  baseURL: string = 'https://api.binance.com';
+  baseURL: string =
+    process.env.NODE_ENV === 'production'
+      ? 'https://api.binance.com'
+      : 'https://testnet.binance.vision';
   key = {
     'Content-Type': 'application/json',
     'X-MBX-APIKEY': '',
@@ -124,14 +129,17 @@ export class BinanceExchange extends ExchangeService {
   }
 
   getPrice(ofProduct: string, priceIn: string): Observable<Asset> {
+    const nominator =
+      ofProduct === this.configs.tradeCurrency ? priceIn : ofProduct;
+    const denominator = nominator === priceIn ? ofProduct : priceIn;
     const path = '/api/v3/ticker/price?';
     const response = this.httpService.get(
-      `${this.baseURL}${path}symbol=${ofProduct}${priceIn}`,
+      `${this.baseURL}${path}symbol=${nominator}${denominator}`,
     );
     const price = response.pipe(
       map((x) => x.data),
       map((x) => {
-        if (x['symbol'] !== `${ofProduct}${priceIn}`) {
+        if (x['symbol'] !== `${nominator}${denominator}`) {
           console.error(
             'Price info returned different from what is requested.',
           );
@@ -146,7 +154,7 @@ export class BinanceExchange extends ExchangeService {
 
           return {
             amount: price,
-            currency_code: `${ofProduct}${priceIn}`,
+            currency_code: `${nominator}${denominator}`,
           };
         } catch (err) {
           console.error(err);
@@ -176,6 +184,13 @@ export class BinanceExchange extends ExchangeService {
 
     const balances = response.pipe(
       mergeMap((x) => x.data.balances),
+      filter((x) => {
+        let filters = this.configs.rebalanceProfiles.map(
+          (item) => item['asset'],
+        ) as string[];
+        filters = [...filters, this.configs.tradeCurrency];
+        return filters.includes(x['asset']);
+      }),
       map((x) => ({
         currency_code: x['asset'],
         amount: parseFloat(x['free']) + parseFloat(x['locked']),
@@ -227,27 +242,35 @@ export class BinanceExchange extends ExchangeService {
     /* if amount is not specified, getBalance and check rebalancing configuration */
     if (amount === undefined) {
       try {
-        const myAsset = await of(await this.getBalance(using))
-          .pipe(
-            map((x) => x.total),
-            filter((x) => x.currency_code === using),
-          )
-          .toPromise();
-        amount = myAsset['amount'];
+        const myAsset = await this.getBalance(using);
+        const purchasingBalance = myAsset.balances.filter(
+          (item) => item.currency_code === using,
+        )[0].amount;
+        amount = myAsset.total.amount;
         const ratio =
           this.configs.rebalanceProfiles
             ?.filter((x) => x.asset === asset)
             .map((x) => x.ratio as number)[0] ?? 1;
-        amount *= ratio;
+        amount = Math.min(amount * ratio, purchasingBalance) * 0.95;
         const assetPrice = await this.getPrice(asset, using).toPromise();
         const lotInfo = await this.getLotSize(asset, using).toPromise();
         const purchaseAmount = amount / assetPrice.amount;
-        const remainder = (amount / assetPrice.amount) % lotInfo.min_quantity;
-        amount = purchaseAmount - remainder;
+        const stepSize = lotInfo.step_size.toString().split('.')[1].length;
+        const minQuantity = lotInfo.min_quantity;
+        if (amount < minQuantity) {
+          throw new HttpException(
+            'Amount not exceeding minimum buy limit.',
+            HttpStatus.INTERNAL_SERVER_ERROR,
+          );
+        }
+        amount = parseFloat(purchaseAmount.toFixed(stepSize));
       } catch (error) {
         const errorMessage = 'Could not calculate total available asset.';
-        console.error(errorMessage);
-        throw new HttpException(errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
+        console.error(`${errorMessage}: ${error}`);
+        throw new HttpException(
+          `${errorMessage}`,
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
       }
     }
 
@@ -269,7 +292,12 @@ export class BinanceExchange extends ExchangeService {
         map((item) => item.data),
         catchError((err) => {
           console.error(err.response.data);
-          return throwError(err);
+          return throwError(
+            new HttpException(
+              `${JSON.stringify(err.response.data)}`,
+              HttpStatus.INTERNAL_SERVER_ERROR,
+            ),
+          );
         }),
       )
       .toPromise();
@@ -289,11 +317,17 @@ export class BinanceExchange extends ExchangeService {
 
         amount = myAsset['amount'];
         const lotInfo = await this.getLotSize(asset, sellFor).toPromise();
-        console.log(lotInfo);
-        const remainder = amount % lotInfo.min_quantity;
-        amount = amount - remainder;
+        const stepSize = lotInfo.step_size.toString().split('.')[1].length;
+        const minQuantity = lotInfo.min_quantity;
+        if (amount < minQuantity) {
+          throw new HttpException(
+            'Not enoungh asset amount to sell.',
+            HttpStatus.INTERNAL_SERVER_ERROR,
+          );
+        }
+        amount = parseFloat(amount.toFixed(stepSize));
       } catch (error) {
-        const errorMessage = 'Could not find an asset to sell.';
+        const errorMessage = `Could not find an asset to sell: ${error}`;
         console.error(errorMessage);
         throw new HttpException(
           'Could not find an asset to sell.',

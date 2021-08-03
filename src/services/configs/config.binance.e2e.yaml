@@ -1,14 +1,12 @@
 configurations:
   secret_keyname: 'BINANCE_SECRET'
   api_keyname: 'BINANCE_APIKEY'
-  trade_with: 'USDC'
+  trade_with: 'USDT'
   rebalance:
     - 'BTC:40'
     - 'ETH:35'
-    - 'LINK:15'
-    - 'ADA:10'
+    - 'BNB:25'
   trading_pairs:
-    - 'BTC:USDC'
+    - 'BTC:USDT'
     - 'ETH:BTC'
-    - 'LINK:BTC'
-    - 'ADA:BTC'
+    - 'BNB:BTC'
