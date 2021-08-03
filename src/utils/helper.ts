@@ -11,3 +11,17 @@ export function assertIsEmpty(val: any[]): asserts val is any[] {
     throw new AssertionError({ message: 'Empty array!' });
   }
 }
+
+export function decimalPlaces(n: number) {
+  const isInt = (n: number) => {
+    return n == Math.round(n) && !isNaN(n);
+  };
+
+  const a = Math.abs(n);
+  let c = a,
+    count = 1;
+  while (!isInt(c) && isFinite(c)) {
+    c = a * Math.pow(10, count++);
+  }
+  return count - 1;
+}
