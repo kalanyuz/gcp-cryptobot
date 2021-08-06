@@ -25,6 +25,7 @@ import {
   BitFlyerSignature,
 } from './bitflyer.entities';
 import { Dip, OrderType } from '../entities/exchange';
+import { request } from 'gaxios';
 @Injectable()
 export class BitFlyerExchange extends ExchangeService {
   baseURL: string = 'https://api.bitflyer.com';
@@ -198,9 +199,11 @@ export class BitFlyerExchange extends ExchangeService {
       product_code: `${asset}_${using}`,
       child_order_type: mode,
       side: 'BUY',
-      size: amount,
+      // https://bitflyer.com/en-jp/faq/4-27
+      size: amount.toFixed(8),
       time_in_force: 'GTC',
     };
+    console.log(requestBody);
     if (mode === OrderType.Limit) {
       requestBody = Object.assign({ price }, requestBody);
     }
@@ -250,9 +253,11 @@ export class BitFlyerExchange extends ExchangeService {
       product_code: `${asset}_${sellFor}`,
       child_order_type: 'MARKET',
       side: 'SELL',
-      size: amount,
+      // https://bitflyer.com/en-jp/faq/4-27
+      size: amount.toFixed(8),
       time_in_force: 'GTC',
     });
+    console.log(requestBody);
     const signature = await this.createSignature('POST', path, requestBody);
     const response = this.httpService
       .post(this.baseURL + path, requestBody, {
@@ -275,6 +280,7 @@ export class BitFlyerExchange extends ExchangeService {
     const requestBody = JSON.stringify({
       product_code: `${asset}_${denominator}`,
     });
+    console.log(requestBody);
     const signature = await this.createSignature('POST', path, requestBody);
     const response = this.httpService
       .post(this.baseURL + path, requestBody, {
