@@ -58,7 +58,7 @@ export class ExchangeController {
         botReq.asset.trim(),
         botReq.denominator.trim(),
         OrderType.Market,
-        botReq.price / assetPrice.amount,
+        botReq.price / parseFloat(assetPrice.amount),
       );
     } catch (error) {
       throw new HttpException(
