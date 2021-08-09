@@ -285,7 +285,7 @@ describe('ExchangeService', () => {
         product_code: `ETH_BTC`,
         child_order_type: 'MARKET',
         side: 'BUY',
-        size: 0.017683065,
+        size: '0.01768307',
         time_in_force: 'GTC',
       }),
       expect.anything(),
@@ -319,9 +319,7 @@ describe('ExchangeService', () => {
 
     expect(buyLimit).toBeCalledTimes(3);
     expect(buyLimit.mock.calls.map((item) => item[3])).toEqual([
-      0.03858,
-      0.0868,
-      0.1984,
+      0.03858, 0.0868, 0.1984,
     ]);
     expect(buyLimit.mock.calls.map((item) => item[4])).toEqual([
       50000 * 0.9,
