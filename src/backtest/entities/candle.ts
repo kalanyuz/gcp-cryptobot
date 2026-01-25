@@ -133,5 +133,5 @@ export interface IndicatorStrategy {
   /**
    * Optional: Get indicator values for visualization/debugging
    */
-  getIndicatorValues?(candles: Candle[], index: number): Record<string, number>;
+  getIndicatorValues?(candles: Candle[], index: number): Record<string, number | string | null>;
 }

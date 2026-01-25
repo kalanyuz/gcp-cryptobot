@@ -487,6 +487,137 @@ async function main() {
      maintaining low drawdowns are most sustainable for long-term trading.
 `);
 
+  // ============ HEAD-TO-HEAD: SMA CROSSOVER vs CDC ACTIONZONE ============
+  console.log(`\n${'═'.repeat(110)}`);
+  console.log('  🔬 HEAD-TO-HEAD: SMA CROSSOVER vs CDC ACTIONZONE');
+  console.log('═'.repeat(110));
+
+  const smaResults = allResults.filter(r => r.strategy === 'sma-crossover');
+  const cdcResults = allResults.filter(r => r.strategy === 'cdc-actionzone');
+
+  console.log(`
+  CORE MECHANISM DIFFERENCES:
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │                 SMA CROSSOVER              │     CDC ACTIONZONE          │
+  ├──────────────────────────────────────────────────────────────────────────┤
+  │ Moving Average: Simple MA (equal weight)   │ Exponential MA (recent bias)│
+  │ Periods:        10/20                      │ 12/26                       │
+  │ Signal:         MA crossover only          │ Zone transition (MA + price)│
+  │ Confirmation:   1 layer                    │ 2 layers                    │
+  │ Sensitivity:    More whipsaws              │ Filtered signals            │
+  └──────────────────────────────────────────────────────────────────────────┘
+
+  CDC ActionZone requires BOTH:
+  1. Fast EMA > Slow EMA (trend confirmation)
+  2. Price > Fast EMA (price confirmation)
+
+  This extra filter reduces false signals in choppy markets.
+  `);
+
+  // Period-by-period comparison
+  console.log('\n  PERIOD-BY-PERIOD COMPARISON:');
+  console.log('  ' + 'Period'.padEnd(12) + '│' + 'SMA PnL%'.padStart(12) + '│' + 'CDC PnL%'.padStart(12) + '│' + 'Winner'.padStart(16) + '│' + 'Margin'.padStart(10));
+  console.log('  ' + '─'.repeat(60));
+
+  const allPeriods = ['ALL_TIME', ...years];
+  let smaWins = 0;
+  let cdcWins = 0;
+
+  allPeriods.forEach(period => {
+    const sma = smaResults.find(r => r.period === period);
+    const cdc = cdcResults.find(r => r.period === period);
+
+    if (sma && cdc) {
+      const smaPnl = sma.totalPnlPercent;
+      const cdcPnl = cdc.totalPnlPercent;
+      const winner = smaPnl > cdcPnl ? 'SMA Crossover' : cdcPnl > smaPnl ? 'CDC ActionZone' : 'Tie';
+      const margin = Math.abs(smaPnl - cdcPnl);
+
+      if (smaPnl > cdcPnl) smaWins++;
+      else if (cdcPnl > smaPnl) cdcWins++;
+
+      console.log('  ' +
+        period.padEnd(12) + '│' +
+        `${smaPnl >= 0 ? '+' : ''}${smaPnl.toFixed(1)}%`.padStart(12) + '│' +
+        `${cdcPnl >= 0 ? '+' : ''}${cdcPnl.toFixed(1)}%`.padStart(12) + '│' +
+        (winner.includes('CDC') ? '🔵 ' + winner : winner.includes('SMA') ? '⚪ ' + winner : winner).padStart(20) + '│' +
+        `${margin.toFixed(1)}%`.padStart(10)
+      );
+    }
+  });
+
+  console.log('  ' + '─'.repeat(60));
+  console.log(`  SCORE: SMA Crossover: ${smaWins} wins | CDC ActionZone: ${cdcWins} wins`);
+
+  // Trade efficiency comparison
+  console.log('\n  TRADE EFFICIENCY COMPARISON:');
+  const smaAllTime = smaResults.find(r => r.period === 'ALL_TIME');
+  const cdcAllTime = cdcResults.find(r => r.period === 'ALL_TIME');
+
+  if (smaAllTime && cdcAllTime) {
+    console.log('  ' + 'Metric'.padEnd(25) + '│' + 'SMA Crossover'.padStart(15) + '│' + 'CDC ActionZone'.padStart(15));
+    console.log('  ' + '─'.repeat(57));
+    console.log('  ' + 'Total Trades'.padEnd(25) + '│' + String(smaAllTime.totalTrades).padStart(15) + '│' + String(cdcAllTime.totalTrades).padStart(15));
+    console.log('  ' + 'Win Rate'.padEnd(25) + '│' + `${smaAllTime.winRate.toFixed(1)}%`.padStart(15) + '│' + `${cdcAllTime.winRate.toFixed(1)}%`.padStart(15));
+    console.log('  ' + 'Profit Factor'.padEnd(25) + '│' + (smaAllTime.profitFactor === Infinity ? '∞' : smaAllTime.profitFactor.toFixed(2)).padStart(15) + '│' + (cdcAllTime.profitFactor === Infinity ? '∞' : cdcAllTime.profitFactor.toFixed(2)).padStart(15));
+    console.log('  ' + 'Max Drawdown'.padEnd(25) + '│' + `${smaAllTime.maxDrawdownPercent.toFixed(1)}%`.padStart(15) + '│' + `${cdcAllTime.maxDrawdownPercent.toFixed(1)}%`.padStart(15));
+    console.log('  ' + 'Sharpe Ratio'.padEnd(25) + '│' + smaAllTime.sharpeRatio.toFixed(2).padStart(15) + '│' + cdcAllTime.sharpeRatio.toFixed(2).padStart(15));
+    console.log('  ' + 'Total PnL %'.padEnd(25) + '│' + `+${smaAllTime.totalPnlPercent.toFixed(1)}%`.padStart(15) + '│' + `+${cdcAllTime.totalPnlPercent.toFixed(1)}%`.padStart(15));
+  }
+
+  // Where each excels
+  console.log(`\n  WHERE EACH STRATEGY EXCELS:`);
+  console.log('  ' + '─'.repeat(80));
+
+  // Find periods where CDC significantly outperforms SMA
+  const cdcAdvantage: string[] = [];
+  const smaAdvantage: string[] = [];
+
+  quarters.forEach(q => {
+    const sma = smaResults.find(r => r.period === q);
+    const cdc = cdcResults.find(r => r.period === q);
+    if (sma && cdc) {
+      const diff = cdc.totalPnlPercent - sma.totalPnlPercent;
+      if (diff > 10) cdcAdvantage.push(`${q}: CDC +${diff.toFixed(0)}% better`);
+      if (diff < -10) smaAdvantage.push(`${q}: SMA +${Math.abs(diff).toFixed(0)}% better`);
+    }
+  });
+
+  console.log('\n  🔵 CDC ActionZone excels in:');
+  if (cdcAdvantage.length > 0) {
+    cdcAdvantage.forEach(a => console.log(`     • ${a}`));
+  } else {
+    console.log('     • (No quarters with >10% advantage)');
+  }
+
+  console.log('\n  ⚪ SMA Crossover excels in:');
+  if (smaAdvantage.length > 0) {
+    smaAdvantage.forEach(a => console.log(`     • ${a}`));
+  } else {
+    console.log('     • (No quarters with >10% advantage)');
+  }
+
+  console.log(`
+  📊 ANALYSIS SUMMARY:
+  ┌────────────────────────────────────────────────────────────────────────────┐
+  │ SMA CROSSOVER advantages:                                                  │
+  │   • Simpler, more signals = captures more small moves                      │
+  │   • Better in strong trending markets with few pullbacks                   │
+  │   • Lower latency (shorter periods: 10/20)                                 │
+  │                                                                            │
+  │ CDC ACTIONZONE advantages:                                                 │
+  │   • Price confirmation filter reduces false signals                        │
+  │   • Better in choppy/ranging markets (fewer whipsaws)                      │
+  │   • Zone system provides clearer trend context                             │
+  │   • EMA reacts faster to price changes than SMA                            │
+  │                                                                            │
+  │ WHEN TO USE CDC ACTIONZONE:                                                │
+  │   • Volatile consolidation periods (2022 Q2-Q4 bear market)                │
+  │   • Markets with frequent pullbacks that trigger false crossovers          │
+  │   • When you want higher win rate over more trades                         │
+  └────────────────────────────────────────────────────────────────────────────┘
+  `);
+
   console.log('═'.repeat(110));
   console.log('  Analysis Complete!');
   console.log('═'.repeat(110));
