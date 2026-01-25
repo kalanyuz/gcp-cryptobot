@@ -332,7 +332,162 @@ async function main() {
     console.log(strat.padEnd(26) + '│' + vals.join('│'));
   });
 
+  // ============ BEAR MARKET RESILIENCE ============
+  // 2022 was the major bear market (-65% BTC), also check bad quarters
+  const bearPeriods = ['2022', '2022-Q2', '2022-Q3', '2022-Q4']; // Major drawdown periods
+  const badQuarters = quarters.filter(q => {
+    // Find quarters where BTC went down
+    return ['2020-Q1', '2021-Q2', '2022-Q1', '2022-Q2', '2022-Q3', '2022-Q4'].includes(q);
+  });
+
   console.log(`\n${'═'.repeat(110)}`);
+  console.log('  🛡️  BEAR MARKET RESILIENCE RANKING (Who Loses Least in Bad Times)');
+  console.log('═'.repeat(110));
+
+  // Calculate bear market score for each strategy
+  const bearScores = strategyNames.map(strat => {
+    const yearlyRes = allResults.filter(r => r.strategy === strat && years.includes(r.period));
+    const quarterlyRes = allResults.filter(r => r.strategy === strat && r.period.includes('-Q'));
+
+    // 2022 performance (main bear market)
+    const bear2022 = yearlyRes.find(r => r.period === '2022');
+
+    // Worst year loss
+    const worstYear = yearlyRes.reduce((w, r) => r.totalPnlPercent < w.totalPnlPercent ? r : w);
+
+    // Count losing quarters
+    const losingQuarters = quarterlyRes.filter(r => r.totalPnlPercent < 0);
+    const avgLoss = losingQuarters.length > 0
+      ? losingQuarters.reduce((s, r) => s + r.totalPnlPercent, 0) / losingQuarters.length
+      : 0;
+
+    // Worst quarter
+    const worstQuarter = quarterlyRes.reduce((w, r) => r.totalPnlPercent < w.totalPnlPercent ? r : w);
+
+    // Max drawdown from all-time
+    const allTime = allResults.find(r => r.strategy === strat && r.period === 'ALL_TIME');
+    const maxDD = allTime?.maxDrawdownPercent || 100;
+
+    // Calculate composite bear score (higher = better defense)
+    // Factors: 2022 performance, worst year, avg losing quarter, max drawdown
+    const bear2022Score = bear2022 ? (100 + bear2022.totalPnlPercent) : 0; // +100 baseline
+    const worstYearScore = 100 + worstYear.totalPnlPercent;
+    const avgLossScore = 100 + avgLoss;
+    const ddScore = 100 - maxDD;
+
+    const compositeScore = (bear2022Score * 0.3) + (worstYearScore * 0.25) + (avgLossScore * 0.25) + (ddScore * 0.2);
+
+    return {
+      strat,
+      bear2022: bear2022?.totalPnlPercent || 0,
+      bear2022DD: bear2022?.maxDrawdownPercent || 0,
+      worstYear: worstYear.period,
+      worstYearPnl: worstYear.totalPnlPercent,
+      losingQtrs: losingQuarters.length,
+      totalQtrs: quarterlyRes.length,
+      avgLoss,
+      worstQtr: worstQuarter.period,
+      worstQtrPnl: worstQuarter.totalPnlPercent,
+      maxDD,
+      compositeScore,
+    };
+  }).sort((a, b) => b.compositeScore - a.compositeScore);
+
+  console.log('Strategy'.padEnd(26) + '│ 2022 PnL │ 2022 DD │ Worst Yr │ Losing Qtrs │ Avg Loss │ Worst Qtr │ MaxDD  │ Score');
+  console.log('─'.repeat(130));
+
+  bearScores.forEach((d, i) => {
+    const rank = i < 3 ? ['🥇', '🥈', '🥉'][i] : `${i + 1}.`;
+    console.log(
+      `${rank} ${d.strat}`.padEnd(26) + '│' +
+      `${d.bear2022 >= 0 ? '+' : ''}${d.bear2022.toFixed(0)}%`.padStart(9) + ' │' +
+      `${d.bear2022DD.toFixed(0)}%`.padStart(8) + ' │' +
+      `${d.worstYearPnl.toFixed(0)}%`.padStart(9) + ' │' +
+      `${d.losingQtrs}/${d.totalQtrs}`.padStart(12) + ' │' +
+      `${d.avgLoss.toFixed(0)}%`.padStart(9) + ' │' +
+      `${d.worstQtrPnl.toFixed(0)}%`.padStart(10) + ' │' +
+      `${d.maxDD.toFixed(0)}%`.padStart(7) + ' │' +
+      d.compositeScore.toFixed(1)
+    );
+  });
+
+  // ============ COMBINED RANKING ============
+  console.log(`\n${'═'.repeat(110)}`);
+  console.log('  📊 COMBINED SUSTAINABILITY RANKING (Balanced Upside + Downside)');
+  console.log('═'.repeat(110));
+
+  // Combine all-time returns with bear market resilience
+  const combinedRanks = strategyNames.map(strat => {
+    const allTime = allResults.find(r => r.strategy === strat && r.period === 'ALL_TIME');
+    const bearScore = bearScores.find(b => b.strat === strat);
+    const stackRank = stackedRanks.find(s => s.strategy === strat);
+
+    // Normalize scores
+    const returnScore = allTime ? Math.log10(Math.max(1, allTime.totalPnlPercent + 100)) * 20 : 0;
+    const defenseScore = bearScore?.compositeScore || 0;
+    const consistScore = stackRank ? (strategyNames.length - stackRank.avgRank + 1) * 5 : 0;
+
+    // Weighted combination: 40% returns, 35% defense, 25% consistency
+    const sustainabilityScore = (returnScore * 0.40) + (defenseScore * 0.35) + (consistScore * 0.25);
+
+    return {
+      strat,
+      totalReturn: allTime?.totalPnlPercent || 0,
+      bear2022: bearScore?.bear2022 || 0,
+      maxDD: bearScore?.maxDD || 100,
+      profitableYears: consistency.find(c => c.s === strat)?.pos || 0,
+      avgRank: stackRank?.avgRank || 12,
+      sustainabilityScore,
+    };
+  }).sort((a, b) => b.sustainabilityScore - a.sustainabilityScore);
+
+  console.log('Strategy'.padEnd(26) + '│ Total Return │ 2022 (Bear) │ MaxDD  │ Prof.Yrs │ AvgRank │ Sustain Score');
+  console.log('─'.repeat(110));
+
+  combinedRanks.forEach((d, i) => {
+    const rank = i < 3 ? ['🥇', '🥈', '🥉'][i] : `${i + 1}.`;
+    const yearEmoji = d.profitableYears === 5 ? '✅' : d.profitableYears >= 4 ? '⚠️' : '❌';
+    console.log(
+      `${rank} ${d.strat}`.padEnd(26) + '│' +
+      `+${d.totalReturn.toFixed(0)}%`.padStart(13) + ' │' +
+      `${d.bear2022 >= 0 ? '+' : ''}${d.bear2022.toFixed(0)}%`.padStart(12) + ' │' +
+      `${d.maxDD.toFixed(0)}%`.padStart(7) + ' │' +
+      `${yearEmoji} ${d.profitableYears}/5`.padStart(9) + ' │' +
+      d.avgRank.toFixed(1).padStart(8) + ' │' +
+      d.sustainabilityScore.toFixed(1).padStart(14)
+    );
+  });
+
+  // ============ FINAL RECOMMENDATION ============
+  console.log(`\n${'═'.repeat(110)}`);
+  console.log('  🎯 FINAL RECOMMENDATION');
+  console.log('═'.repeat(110));
+
+  const top3 = combinedRanks.slice(0, 3);
+  console.log(`
+  Based on combined analysis of RETURNS + DEFENSE + CONSISTENCY:
+
+  🥇 BEST OVERALL: ${top3[0].strat}
+     • Total Return: +${top3[0].totalReturn.toFixed(0)}%
+     • Bear Market (2022): ${top3[0].bear2022 >= 0 ? '+' : ''}${top3[0].bear2022.toFixed(0)}%
+     • Max Drawdown: ${top3[0].maxDD.toFixed(0)}%
+     • Profitable Years: ${top3[0].profitableYears}/5
+
+  🥈 RUNNER-UP: ${top3[1].strat}
+     • Total Return: +${top3[1].totalReturn.toFixed(0)}%
+     • Bear Market (2022): ${top3[1].bear2022 >= 0 ? '+' : ''}${top3[1].bear2022.toFixed(0)}%
+     • Max Drawdown: ${top3[1].maxDD.toFixed(0)}%
+
+  🥉 THIRD PLACE: ${top3[2].strat}
+     • Total Return: +${top3[2].totalReturn.toFixed(0)}%
+     • Bear Market (2022): ${top3[2].bear2022 >= 0 ? '+' : ''}${top3[2].bear2022.toFixed(0)}%
+     • Max Drawdown: ${top3[2].maxDD.toFixed(0)}%
+
+  💡 KEY INSIGHT: Strategies that performed well in 2022 (bear market) while
+     maintaining low drawdowns are most sustainable for long-term trading.
+`);
+
+  console.log('═'.repeat(110));
   console.log('  Analysis Complete!');
   console.log('═'.repeat(110));
 }
