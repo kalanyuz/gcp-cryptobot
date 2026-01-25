@@ -6,6 +6,7 @@ import { BitFlyerExchange } from './exchange/services/bitflyer.service';
 import { BotConfigService } from './services/configs/botconfigs.service';
 import { SecretsService } from './services/secrets/secrets.service';
 import configuration from './services/configs/configurations';
+import { BacktestModule } from './backtest/backtest.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import configuration from './services/configs/configurations';
       isGlobal: true,
       load: [configuration],
     }),
+    BacktestModule,
   ],
   providers: [
     {

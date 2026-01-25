@@ -6,6 +6,7 @@ import { BotConfigService } from './services/configs/botconfigs.service';
 import { SecretsService } from './services/secrets/secrets.service';
 import configuration from './services/configs/configurations';
 import { BinanceExchange } from './exchange/services/binance.service';
+import { BacktestModule } from './backtest/backtest.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { BinanceExchange } from './exchange/services/binance.service';
       isGlobal: true,
       load: [configuration],
     }),
+    BacktestModule,
   ],
   providers: [
     {
