@@ -117,18 +117,22 @@ async function main() {
   const btcCandles = generateCandles(BTC_MONTHLY, 0.025);
   console.log(`  Generated ${btcCandles.length} daily candles\n`);
 
-  console.log('  Strategy'.padEnd(25) + '│' + 'Return'.padStart(12) + '│' + 'Trades'.padStart(8) + '│' + 'Win%'.padStart(8) + '│' + 'MaxDD'.padStart(8));
-  console.log('  ' + '─'.repeat(63));
+  console.log('  Strategy'.padEnd(22) + '│' + 'Return'.padStart(10) + '│' + 'Trades'.padStart(7) + '│' + 'Win%'.padStart(6) + '│' + 'PF'.padStart(6) + '│' + 'MaxDD'.padStart(6) + '│' + 'Sharpe'.padStart(7) + '│' + 'Sortino'.padStart(8));
+  console.log('  ' + '─'.repeat(78));
 
   for (const s of listStrategies()) {
     const result = runBacktest(btcCandles, s.name, 'BTCUSDT');
     if (result) {
+      const m = result.metrics;
       console.log(
-        `  ${s.name}`.padEnd(25) + '│' +
-        `+${result.metrics.totalPnlPercent.toFixed(0)}%`.padStart(12) + '│' +
-        String(result.metrics.totalTrades).padStart(8) + '│' +
-        `${result.metrics.winRate.toFixed(0)}%`.padStart(8) + '│' +
-        `${result.metrics.maxDrawdownPercent.toFixed(0)}%`.padStart(8)
+        `  ${s.name}`.padEnd(22) + '│' +
+        `+${m.totalPnlPercent.toFixed(0)}%`.padStart(10) + '│' +
+        String(m.totalTrades).padStart(7) + '│' +
+        `${m.winRate.toFixed(0)}%`.padStart(6) + '│' +
+        (m.profitFactor === Infinity ? '∞' : m.profitFactor.toFixed(1)).padStart(6) + '│' +
+        `${m.maxDrawdownPercent.toFixed(0)}%`.padStart(6) + '│' +
+        m.sharpeRatio.toFixed(2).padStart(7) + '│' +
+        (m.sortinoRatio === Infinity ? '∞' : m.sortinoRatio.toFixed(2)).padStart(8)
       );
     }
   }
@@ -141,18 +145,22 @@ async function main() {
   const dogeCandles = generateCandles(DOGE_MONTHLY, 0.07);
   console.log(`  Generated ${dogeCandles.length} daily candles\n`);
 
-  console.log('  Strategy'.padEnd(25) + '│' + 'Return'.padStart(12) + '│' + 'Trades'.padStart(8) + '│' + 'Win%'.padStart(8) + '│' + 'MaxDD'.padStart(8));
-  console.log('  ' + '─'.repeat(63));
+  console.log('  Strategy'.padEnd(22) + '│' + 'Return'.padStart(10) + '│' + 'Trades'.padStart(7) + '│' + 'Win%'.padStart(6) + '│' + 'PF'.padStart(6) + '│' + 'MaxDD'.padStart(6) + '│' + 'Sharpe'.padStart(7) + '│' + 'Sortino'.padStart(8));
+  console.log('  ' + '─'.repeat(78));
 
   for (const s of listStrategies()) {
     const result = runBacktest(dogeCandles, s.name, 'DOGEUSDT');
     if (result) {
+      const m = result.metrics;
       console.log(
-        `  ${s.name}`.padEnd(25) + '│' +
-        `+${result.metrics.totalPnlPercent.toFixed(0)}%`.padStart(12) + '│' +
-        String(result.metrics.totalTrades).padStart(8) + '│' +
-        `${result.metrics.winRate.toFixed(0)}%`.padStart(8) + '│' +
-        `${result.metrics.maxDrawdownPercent.toFixed(0)}%`.padStart(8)
+        `  ${s.name}`.padEnd(22) + '│' +
+        `+${m.totalPnlPercent.toFixed(0)}%`.padStart(10) + '│' +
+        String(m.totalTrades).padStart(7) + '│' +
+        `${m.winRate.toFixed(0)}%`.padStart(6) + '│' +
+        (m.profitFactor === Infinity ? '∞' : m.profitFactor.toFixed(1)).padStart(6) + '│' +
+        `${m.maxDrawdownPercent.toFixed(0)}%`.padStart(6) + '│' +
+        m.sharpeRatio.toFixed(2).padStart(7) + '│' +
+        (m.sortinoRatio === Infinity ? '∞' : m.sortinoRatio.toFixed(2)).padStart(8)
       );
     }
   }
