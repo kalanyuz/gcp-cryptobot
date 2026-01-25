@@ -5,6 +5,13 @@ import {
   CDCActionZoneRSIStrategy,
   CDCActionZoneStopLossStrategy,
 } from './cdc-strategies';
+import {
+  CDCConfirmedSMAStrategy,
+  VolatilityAdaptiveStrategy,
+  DualConfirmationStrategy,
+  SMAEntryCDCExitStrategy,
+  CDCEntrySMAExitStrategy,
+} from './hybrid-strategies';
 import { FibonacciRetracementStrategy } from '../tools/fibonacci';
 
 /**
@@ -446,6 +453,12 @@ export function getStrategy(name: string): IndicatorStrategy | null {
     'cdc-actionzone-stoploss': new CDCActionZoneStopLossStrategy(),
     // Fibonacci strategy
     fibonacci: new FibonacciRetracementStrategy(),
+    // Hybrid strategies (combining SMA and CDC)
+    'cdc-confirmed-sma': new CDCConfirmedSMAStrategy(),
+    'volatility-adaptive': new VolatilityAdaptiveStrategy(),
+    'dual-confirmation': new DualConfirmationStrategy(),
+    'sma-entry-cdc-exit': new SMAEntryCDCExitStrategy(),
+    'cdc-entry-sma-exit': new CDCEntrySMAExitStrategy(),
   };
 
   return strategies[name] || null;
@@ -471,5 +484,11 @@ export function listStrategies(): { name: string; description: string }[] {
     { name: 'cdc-actionzone-stoploss', description: 'CDC ActionZone + Stop Loss - With trailing stop' },
     // Fibonacci strategy
     { name: 'fibonacci', description: 'Fibonacci Retracement - Buy at Fib levels, sell at extensions' },
+    // Hybrid strategies (combining SMA and CDC)
+    { name: 'cdc-confirmed-sma', description: 'CDC-Confirmed SMA - SMA timing + CDC zone confirmation' },
+    { name: 'volatility-adaptive', description: 'Volatility Adaptive - Switches SMA/CDC based on market volatility' },
+    { name: 'dual-confirmation', description: 'Dual Confirmation - Requires both SMA and CDC to agree' },
+    { name: 'sma-entry-cdc-exit', description: 'SMA Entry / CDC Exit - Fast entries, filtered exits' },
+    { name: 'cdc-entry-sma-exit', description: 'CDC Entry / SMA Exit - Quality entries, fast exits' },
   ];
 }
