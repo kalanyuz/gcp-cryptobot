@@ -11,6 +11,7 @@ import { CandleService } from './services/candle.service';
 import { BacktestService } from './services/backtest.service';
 import { Timeframe, BacktestConfig, Candle } from './entities/candle';
 import { getStrategy, listStrategies } from './strategies/sample-strategies';
+import { FibonacciTool, analyzeFibonacci, DEFAULT_FIB_LEVELS } from './tools/fibonacci';
 
 interface BacktestRequest {
   symbol: string;
@@ -313,5 +314,142 @@ export class BacktestController {
   async getSymbols() {
     const symbols = await this.candleService.getAvailableSymbols().toPromise();
     return { count: symbols.length, symbols };
+  }
+
+  /**
+   * Fibonacci analysis - Calculate retracement/extension levels and risk/reward
+   */
+  @Post('fibonacci')
+  async fibonacciAnalysis(
+    @Body()
+    request: {
+      symbol: string;
+      timeframe: Timeframe;
+      lookback?: number;
+      entryPrice?: number;
+      startTime?: number;
+      endTime?: number;
+    },
+  ) {
+    if (!request.symbol || !request.timeframe) {
+      throw new HttpException(
+        'Symbol and timeframe are required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // Fetch candle data
+    const candles = await this.candleService
+      .fetchCandles({
+        symbol: request.symbol.toUpperCase(),
+        timeframe: request.timeframe,
+        startTime: request.startTime,
+        endTime: request.endTime,
+      })
+      .toPromise();
+
+    if (candles.length < 10) {
+      throw new HttpException(
+        'Insufficient candle data for Fibonacci analysis',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const lookback = request.lookback || 50;
+    const fibTool = new FibonacciTool(DEFAULT_FIB_LEVELS, lookback);
+    const index = candles.length - 1;
+
+    const analysis = fibTool.analyze(candles, index);
+    const riskReward = fibTool.calculateRiskReward(candles, index, request.entryPrice);
+    const fibLevels = fibTool.isAtFibLevel(candles, index);
+    const report = fibTool.formatReport(analysis, riskReward || undefined);
+
+    return {
+      symbol: request.symbol.toUpperCase(),
+      timeframe: request.timeframe,
+      lookback,
+      analysis,
+      riskReward,
+      atFibLevel: fibLevels,
+      report,
+    };
+  }
+
+  /**
+   * Quick risk/reward calculator
+   * Calculate potential R:R for a trade at current price
+   */
+  @Post('risk-reward')
+  async calculateRiskReward(
+    @Body()
+    request: {
+      symbol: string;
+      timeframe: Timeframe;
+      entryPrice?: number;
+      stopLossPrice?: number;
+      lookback?: number;
+    },
+  ) {
+    if (!request.symbol || !request.timeframe) {
+      throw new HttpException(
+        'Symbol and timeframe are required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // Fetch candle data
+    const candles = await this.candleService
+      .fetchCandles({
+        symbol: request.symbol.toUpperCase(),
+        timeframe: request.timeframe,
+      })
+      .toPromise();
+
+    if (candles.length < 10) {
+      throw new HttpException(
+        'Insufficient candle data',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const lookback = request.lookback || 50;
+    const fibTool = new FibonacciTool(DEFAULT_FIB_LEVELS, lookback);
+    const index = candles.length - 1;
+    const currentPrice = candles[index].close;
+
+    const analysis = fibTool.analyze(candles, index);
+    if (!analysis) {
+      throw new HttpException(
+        'Could not perform Fibonacci analysis',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const entryPrice = request.entryPrice || currentPrice;
+    const stopLoss = request.stopLossPrice || analysis.swingLow.price;
+    const riskAmount = Math.abs(entryPrice - stopLoss);
+    const riskPercent = (riskAmount / entryPrice) * 100;
+
+    // Calculate targets at each Fib extension
+    const targets = analysis.extensionLevels.map((ext) => ({
+      level: `${(ext.level * 100).toFixed(1)}%`,
+      price: ext.price,
+      profit: Math.abs(ext.price - entryPrice),
+      profitPercent: ((Math.abs(ext.price - entryPrice)) / entryPrice) * 100,
+      riskRewardRatio: Math.abs(ext.price - entryPrice) / riskAmount,
+    }));
+
+    return {
+      symbol: request.symbol.toUpperCase(),
+      currentPrice,
+      entryPrice,
+      stopLoss,
+      riskAmount,
+      riskPercent: riskPercent.toFixed(2) + '%',
+      targets: targets.filter((t) => t.riskRewardRatio > 0),
+      recommendation: targets.find((t) => t.riskRewardRatio >= 2)
+        ? `Target ${targets.find((t) => t.riskRewardRatio >= 2)?.level} offers ${targets.find((t) => t.riskRewardRatio >= 2)?.riskRewardRatio.toFixed(2)}:1 R:R`
+        : 'No targets with R:R >= 2:1 found',
+    };
   }
 }

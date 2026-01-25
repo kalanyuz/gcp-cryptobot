@@ -1,5 +1,11 @@
 import { Candle, IndicatorStrategy, Signal } from '../entities/candle';
 import { SMA, EMA, RSI, MACD, BollingerBands, Stochastic, ATR } from './indicators';
+import {
+  CDCActionZoneStrategy,
+  CDCActionZoneRSIStrategy,
+  CDCActionZoneStopLossStrategy,
+} from './cdc-strategies';
+import { FibonacciRetracementStrategy } from '../tools/fibonacci';
 
 /**
  * SMA Crossover Strategy
@@ -425,6 +431,7 @@ export class VolatilityBreakoutStrategy implements IndicatorStrategy {
  */
 export function getStrategy(name: string): IndicatorStrategy | null {
   const strategies: Record<string, IndicatorStrategy> = {
+    // Standard strategies
     'sma-crossover': new SMACrossoverStrategy(),
     rsi: new RSIStrategy(),
     macd: new MACDStrategy(),
@@ -433,6 +440,12 @@ export function getStrategy(name: string): IndicatorStrategy | null {
     stochastic: new StochasticStrategy(),
     'triple-ema': new TripleEMAStrategy(),
     'volatility-breakout': new VolatilityBreakoutStrategy(),
+    // CDC ActionZone strategies (by piriya33)
+    'cdc-actionzone': new CDCActionZoneStrategy(),
+    'cdc-actionzone-rsi': new CDCActionZoneRSIStrategy(),
+    'cdc-actionzone-stoploss': new CDCActionZoneStopLossStrategy(),
+    // Fibonacci strategy
+    fibonacci: new FibonacciRetracementStrategy(),
   };
 
   return strategies[name] || null;
@@ -443,6 +456,7 @@ export function getStrategy(name: string): IndicatorStrategy | null {
  */
 export function listStrategies(): { name: string; description: string }[] {
   return [
+    // Standard strategies
     { name: 'sma-crossover', description: 'SMA Crossover - Buy when fast SMA crosses above slow SMA' },
     { name: 'rsi', description: 'RSI - Buy on oversold, sell on overbought' },
     { name: 'macd', description: 'MACD Crossover - Buy when MACD crosses above signal line' },
@@ -451,5 +465,11 @@ export function listStrategies(): { name: string; description: string }[] {
     { name: 'stochastic', description: 'Stochastic - %K/%D crossovers in extreme zones' },
     { name: 'triple-ema', description: 'Triple EMA - Three EMA trend alignment' },
     { name: 'volatility-breakout', description: 'ATR Breakout - Volatility-based entries' },
+    // CDC ActionZone strategies (by piriya33)
+    { name: 'cdc-actionzone', description: 'CDC ActionZone V3 - Dual EMA trend following (piriya33)' },
+    { name: 'cdc-actionzone-rsi', description: 'CDC ActionZone + RSI - With divergence confirmation' },
+    { name: 'cdc-actionzone-stoploss', description: 'CDC ActionZone + Stop Loss - With trailing stop' },
+    // Fibonacci strategy
+    { name: 'fibonacci', description: 'Fibonacci Retracement - Buy at Fib levels, sell at extensions' },
   ];
 }
