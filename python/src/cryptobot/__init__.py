@@ -14,6 +14,12 @@ Usage (Live Trading):
     config = TraderConfig(symbol="BTC/USDT", strategy="cdc-confirmed-sma")
     trader = LiveTrader(config, api_key="...", api_secret="...")
     result = trader.check_and_trade()
+
+Usage (Analysis):
+    from cryptobot import analyze_confluence, print_confluence_report
+
+    result = analyze_confluence(candles)
+    print_confluence_report(result)
 """
 
 from .entities import (
@@ -35,6 +41,10 @@ from .strategies import (
 from .backtest import BacktestService
 from .exchange import ExchangeClient
 from .live_trader import LiveTrader, TraderConfig, TraderState
+from .elliott_wave import detect_elliott_wave, WaveCount, WavePosition, WaveType
+from .support_resistance import analyze_support_resistance, SRAnalysis, PriceBox
+from .indicators import bollinger_bands, keltner_channels, analyze_bands, BollingerBands, BandAnalysis
+from .confluence import analyze_confluence, ConfluenceResult, ConfluenceLevel, print_confluence_report
 
 __all__ = [
     # Entities
@@ -66,4 +76,24 @@ __all__ = [
     "LiveTrader",
     "TraderConfig",
     "TraderState",
+    # Elliott Wave
+    "detect_elliott_wave",
+    "WaveCount",
+    "WavePosition",
+    "WaveType",
+    # Support/Resistance
+    "analyze_support_resistance",
+    "SRAnalysis",
+    "PriceBox",
+    # Bands
+    "bollinger_bands",
+    "keltner_channels",
+    "analyze_bands",
+    "BollingerBands",
+    "BandAnalysis",
+    # Confluence
+    "analyze_confluence",
+    "ConfluenceResult",
+    "ConfluenceLevel",
+    "print_confluence_report",
 ]

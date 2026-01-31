@@ -153,3 +153,177 @@ def atr_series(df: pl.DataFrame, period: int) -> pl.Series:
     true_range = pl.max_horizontal(tr1, tr2, tr3)
 
     return true_range.rolling_mean(window_size=period)
+
+
+# Band indicators for confluence analysis
+
+
+from dataclasses import dataclass
+
+
+@dataclass
+class BollingerBands:
+    """Bollinger Bands values."""
+    upper: float
+    middle: float
+    lower: float
+    width: float  # Band width as % of middle
+    percent_b: float  # %B - where price is relative to bands (0=lower, 1=upper)
+
+
+@dataclass
+class KeltnerChannels:
+    """Keltner Channel values."""
+    upper: float
+    middle: float
+    lower: float
+
+
+def bollinger_bands(
+    candles: pl.DataFrame,
+    index: int,
+    period: int = 20,
+    std_dev: float = 2.0,
+) -> BollingerBands | None:
+    """
+    Calculate Bollinger Bands.
+
+    Args:
+        candles: DataFrame with 'close' column
+        index: Current index
+        period: SMA period (default 20)
+        std_dev: Standard deviation multiplier (default 2.0)
+
+    Returns:
+        BollingerBands or None if insufficient data
+    """
+    if index < period - 1:
+        return None
+
+    closes = candles["close"][index - period + 1 : index + 1].to_list()
+    current_price = candles["close"][index]
+
+    # Middle band (SMA)
+    middle = sum(closes) / period
+
+    # Standard deviation
+    variance = sum((x - middle) ** 2 for x in closes) / period
+    std = variance ** 0.5
+
+    # Upper and lower bands
+    upper = middle + std_dev * std
+    lower = middle - std_dev * std
+
+    # Band width
+    width = (upper - lower) / middle * 100 if middle > 0 else 0
+
+    # %B - position within bands
+    band_range = upper - lower
+    percent_b = (current_price - lower) / band_range if band_range > 0 else 0.5
+
+    return BollingerBands(
+        upper=upper,
+        middle=middle,
+        lower=lower,
+        width=width,
+        percent_b=percent_b,
+    )
+
+
+def keltner_channels(
+    candles: pl.DataFrame,
+    index: int,
+    ema_period: int = 20,
+    atr_period: int = 10,
+    multiplier: float = 2.0,
+) -> KeltnerChannels | None:
+    """
+    Calculate Keltner Channels.
+
+    Args:
+        candles: DataFrame with OHLC columns
+        index: Current index
+        ema_period: EMA period for middle line (default 20)
+        atr_period: ATR period (default 10)
+        multiplier: ATR multiplier for bands (default 2.0)
+
+    Returns:
+        KeltnerChannels or None if insufficient data
+    """
+    middle = ema(candles, ema_period, index)
+    atr_val = atr(candles, atr_period, index)
+
+    if middle is None or atr_val is None:
+        return None
+
+    upper = middle + multiplier * atr_val
+    lower = middle - multiplier * atr_val
+
+    return KeltnerChannels(
+        upper=upper,
+        middle=middle,
+        lower=lower,
+    )
+
+
+@dataclass
+class BandAnalysis:
+    """Combined band analysis result."""
+    bollinger: BollingerBands | None
+    keltner: KeltnerChannels | None
+    squeeze: bool  # Bollinger inside Keltner (low volatility)
+    position: str  # "oversold", "neutral", "overbought"
+    description: str
+
+
+def analyze_bands(
+    candles: pl.DataFrame,
+    index: int,
+) -> BandAnalysis:
+    """
+    Analyze price position relative to bands.
+
+    Returns:
+        BandAnalysis with squeeze detection and position assessment
+    """
+    bb = bollinger_bands(candles, index)
+    kc = keltner_channels(candles, index)
+
+    current_price = candles["close"][index]
+
+    # Detect squeeze (Bollinger inside Keltner = low volatility, expect breakout)
+    squeeze = False
+    if bb and kc:
+        squeeze = bb.lower > kc.lower and bb.upper < kc.upper
+
+    # Determine position
+    position = "neutral"
+    description = ""
+
+    if bb:
+        if bb.percent_b <= 0.0:
+            position = "oversold"
+            description = "Price at/below lower band - oversold"
+        elif bb.percent_b >= 1.0:
+            position = "overbought"
+            description = "Price at/above upper band - overbought"
+        elif bb.percent_b <= 0.2:
+            position = "oversold"
+            description = "Price near lower band - potentially oversold"
+        elif bb.percent_b >= 0.8:
+            position = "overbought"
+            description = "Price near upper band - potentially overbought"
+        else:
+            position = "neutral"
+            description = "Price within bands - neutral"
+
+        if squeeze:
+            description += " | SQUEEZE detected (expect volatility expansion)"
+
+    return BandAnalysis(
+        bollinger=bb,
+        keltner=kc,
+        squeeze=squeeze,
+        position=position,
+        description=description,
+    )
