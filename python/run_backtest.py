@@ -2,10 +2,12 @@
 """
 Strategy Backtest Runner
 
-Compares the 3 core strategies on historical data:
+Compares all strategies on historical data:
 1. SMA Crossover - Best for clean trending markets
 2. CDC ActionZone - Filtered signals for choppy markets
 3. CDC-Confirmed SMA - Hybrid: best for volatile assets
+4. Elliott Wave - Entry at Wave 2/C, exit at Wave 5
+5. Confluence - Multi-factor S/R + Bands + Trend
 """
 
 import random
@@ -184,12 +186,14 @@ def main():
             print_table_row(s["name"], result.metrics)
 
     print("\n" + "═" * 80)
-    print("  RECOMMENDATION")
+    print("  STRATEGY GUIDE")
     print("═" * 80)
     print("""
-  • BTC/ETH (clean trends):     Use sma-crossover
-  • DOGE/meme coins (volatile): Use cdc-confirmed-sma
-  • Unknown market:             Use cdc-actionzone (safer)
+  • BTC/ETH (clean trends):     sma-crossover or elliott-wave
+  • DOGE/meme (volatile):       cdc-confirmed-sma
+  • Choppy/ranging:             cdc-actionzone
+  • High win-rate focus:        confluence (fewer trades, quality entries)
+  • Wave timing:                elliott-wave (catch Wave 3 moves)
     """)
 
 
