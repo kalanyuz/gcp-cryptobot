@@ -35,3 +35,4 @@ ENV/
 .pytest_cache/
 .coverage
 htmlcov/
+trading.db
